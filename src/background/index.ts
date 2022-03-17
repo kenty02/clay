@@ -10,3 +10,7 @@ onMessage("ping", ({ data }) => {
   console.log(data);
   return;
 });
+
+export const getPing = () => {
+  return "Ping!";
+};
