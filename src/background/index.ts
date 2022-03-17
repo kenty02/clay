@@ -5,9 +5,10 @@ const optionUrl = browser.runtime.getURL("options/options.html");
 browser.tabs.create({ url: optionUrl });
 console.log("hello world!");
 
-onMessage("ping", ({ data }) => {
-  console.log("Got Ping!");
-  console.log(data);
+onMessage("ping", ({ data: { pongMessage }, ...rest }) => {
+  rest.sender;
+  console.log("Got Pong!");
+  console.log(pongMessage);
   return;
 });
 

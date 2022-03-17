@@ -1,9 +1,9 @@
 import { sendMessage } from "webext-bridge";
 
-alert("hello from contente-script!");
-console.log("hello from contente-script!");
+alert("hello from content-script!");
+console.log("hello from content-script!");
 sendMessage(
   "ping",
-  { mesasge: `Ping from ${document.title} to background!` },
+  { pongMessage: `Pong from ${document.title} to background!` },
   "background"
 );
