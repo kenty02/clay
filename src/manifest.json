@@ -10,6 +10,8 @@
   "permissions": [
     "tabs",
     "activeTab",
+    "history",
+    "webNavigation",
     "<all_urls>"
   ],
   "browser_action": {
@@ -38,5 +40,14 @@
         "content-scripts/index.js"
       ]
     }
-  ]
+  ],
+  "commands": {
+    "open-view": {
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "Alt+Q"
+      },
+      "description": "Open Spile view."
+    }
+  }
 }

@@ -8,6 +8,8 @@ import path from "path";
 // @ts-expect-error @types/web-ext not yet available
 import webExt from "web-ext";
 import chokidar from "chokidar";
+import fg from "fast-glob";
+import { Server } from "ws";
 
 const dev = !!process.env["IS_DEV"];
 
@@ -26,13 +28,29 @@ const buildSingle = async (
     sourcemap: dev ? "inline" : false,
     plugins: [
       sassPlugin({
-        async transform(source) {
-          const { css } = await postcss(
+        async transform(source, ...rest) {
+          const out = await postcss(
             autoprefixer,
             // @ts-expect-error @types/tailwindcss is outdated
             tailwindcss(path.resolve(__dirname, "../tailwind.config.js"))
           ).process(source, { from: undefined }); // suppress warning
-          return css;
+
+          // @ts-expect-error message has additional propeties
+          // eg. **/*.tsx
+          const { dir, glob }: Partial<{ dir: string; glob: string }> =
+            out.messages.filter((m) => m.type == "dir-dependency")[0];
+          if (!dir || !glob) {
+            throw new Error("invalid message from tailwindcss");
+          }
+
+          // files to watch
+          const files = await fg(path.join(dir, glob).replace(/\\/g, "/"));
+
+          return {
+            contents: out.css,
+            loader: "css",
+            watchFiles: files,
+          };
         },
       }),
     ],
@@ -43,6 +61,17 @@ const buildSingle = async (
 const copyFromSrcToDist = async (from: string) => {
   const to = from.replace("src", "dist/chrome");
   await fs.copyFile(from, to);
+};
+
+const startLogServer = () => {
+  const s = new Server({ port: 5001 });
+
+  s.on("connection", (ws) => {
+    ws.on("message", (message) => {
+      console.log("%s", message);
+    });
+  });
+  console.log("started log server at port 5001");
 };
 
 (async () => {
@@ -99,21 +128,20 @@ const copyFromSrcToDist = async (from: string) => {
   );
   // extensionRunner.reloadAllExtensions();
   // extensionRunner.exit();
-  if (watchMode)
-    chokidar
-      .watch("./src", { ignoreInitial: true })
-      .on("all", async (event, path) => {
-        console.log(event, path);
-        if (path.endsWith(".json"))
-          await copyFromSrcToDist("src/manifest.json");
-        else if (path.endsWith(".html")) {
-          await copyFromSrcToDist("src/popup/popup.html");
-          await copyFromSrcToDist("src/options/options.html");
-        } else if (path.endsWith(".tsx")) {
-          // zatu
-          return;
-        }
-        console.log("reloading!");
-        extensionRunner.reloadAllExtensions();
-      });
+  if (watchMode) startLogServer();
+  chokidar
+    .watch("./src", { ignoreInitial: true })
+    .on("all", async (event, path) => {
+      console.log(event, path);
+      if (path.endsWith(".json")) await copyFromSrcToDist("src/manifest.json");
+      else if (path.endsWith(".html")) {
+        await copyFromSrcToDist("src/popup/popup.html");
+        await copyFromSrcToDist("src/options/options.html");
+      } else if (path.endsWith(".tsx")) {
+        // zatu
+        return;
+      }
+      console.log("reloading!");
+      extensionRunner.reloadAllExtensions();
+    });
 })();
