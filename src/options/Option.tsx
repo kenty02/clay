@@ -51,9 +51,7 @@ const RowInColumn = ({ index, style, col }) => {
       {/* /> */}
       {node ? (
         <Node
-          title={`${history?.title ?? history?.url ?? ""}${
-            node.id
-          }:(${col},${index})`}
+          title={`${history?.title ?? history?.url ?? ""}`}
           iconUrl={"chrome://favicon/" + history?.url}
           url={node.url}
           isFocused={!!focus}

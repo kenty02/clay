@@ -46,11 +46,11 @@ export const db = new SpileDatabase();
 
 db.on("populate", () => {
   // test data
-  db.node.bulkAdd([
-    {
-      url: "http://test.com",
-      childrenIds: [],
-      absolutePosition: { col: 0, row: 0 },
-    },
-  ]);
+  // db.node.bulkAdd([
+  //   {
+  //     url: "http://test.com",
+  //     childrenIds: [],
+  //     absolutePosition: { col: 0, row: 0 },
+  //   },
+  // ]);
 });

@@ -1,6 +1,6 @@
 const logServerSock = new WebSocket("ws://localhost:5001");
 
-export const log = (message: any) => {
+export const log = (message: Parameters<JSON["stringify"]>[0]) => {
   console.log(message);
   if (typeof message !== "string") message = JSON.stringify(message, null, 2);
   if (logServerSock.readyState === WebSocket.OPEN) logServerSock.send(message);
@@ -12,3 +12,19 @@ export const log = (message: any) => {
 export const checkFullArray = <T>(array: (T | undefined)[]): array is T[] => {
   return array.indexOf(undefined) === -1;
 };
+
+interface HasId<U> {
+  id: U;
+}
+export function ensureId<T extends { id?: U }, U = number>(
+  data: T
+): asserts data is T & HasId<U> {
+  if (!data.id) throw new IdSomehowNotFoundError();
+}
+
+// Dexieで取得したデータに何故かidがない場合
+export class IdSomehowNotFoundError extends Error {
+  constructor() {
+    super(`id somehow not found`);
+  }
+}

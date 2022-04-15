@@ -11,7 +11,7 @@ import chokidar from "chokidar";
 import fg from "fast-glob";
 import { Server } from "ws";
 
-const dev = !!process.env["IS_DEV"];
+const dev = true; // FIXME
 
 // TODO: support other than chrome
 

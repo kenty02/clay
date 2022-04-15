@@ -1,7 +1,7 @@
 import browser from "webextension-polyfill";
 import { onMessage } from "webext-bridge";
 import { db, IFocus } from "../db";
-import { checkFullArray, log } from "../utils";
+import { checkFullArray, log, ensureId } from "../utils";
 
 const optionUrl = browser.runtime.getURL("options/options.html");
 browser.tabs.create({ url: optionUrl });
@@ -30,49 +30,79 @@ export const getPing = () => {
 
 const openedTabs = new Set<number>();
 const newlyOpenedTabsAndOpener = new Map<number, number>();
+// key = tabId
+const waiters = new Map<number, () => void>();
+const waitForTabInfo = (tabId: number) =>
+  new Promise<void>((resolve) => {
+    waiters.set(tabId, () => resolve());
+  });
+const tabInfoSet = (tabId: number) => {
+  const waiter = waiters.get(tabId);
+  if (waiter) {
+    waiters.delete(tabId);
+    waiter();
+  }
+};
 
+let testCount = 0;
+// タブに関するあらゆる更新情報が来る
+// Duplicate&Newの際にフォーカス及びノードを正しく関連付けられるようにするため
+// 特に、タブを複製した場合onCommitedは呼ばれずこっちのみが呼ばれる
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // const a = { tabId, changeInfo, tab };
-  // log("onUpdated: " + JSON.stringify(a, null, 2));
-  log("-".repeat(10));
+  if (!tab.url) {
+    throw new Error("tabs permission not granted?");
+  }
+
+  // ignore extension pages
+  if (tab.url.startsWith("chrome-extension://")) {
+    return;
+  }
+
+  if (changeInfo.url) {
+    // URL変更(つまり遷移)が発生
+    // 同じURLのリンク踏んでも発生しない!
+    log(
+      testCount++ +
+        "th transition: " +
+        JSON.stringify({ tabId, changeInfo, tab }, null, 2)
+    );
+    try {
+      await processTransition({
+        url: tab.url,
+        tabId,
+        openerTabId: tab.openerTabId,
+      });
+    } catch (e) {
+      if (e instanceof Error) {
+        log(e.stack);
+      } else {
+        log(e);
+      }
+    }
+
+    //   const transitionInfo = await getTransitionInfo(tabId);
+    // if(transitionInfo) {
+    //   log("transitionInfo available")
+    // }
+  }
   if (openedTabs.has(tabId)) return;
   openedTabs.add(tabId);
-  // we can get opener from tab info
-  // but it may be not precise. alternatively, analyse transition, analyse onclicks, or hijack webrequest?
-  tab.openerTabId && newlyOpenedTabsAndOpener.set(tabId, tab.openerTabId);
-  if (tab.openerTabId) {
-    // tab opened by another tab, by clicking link or duplication
-    log(`tab ${tab.id} opened by tab ${tab.openerTabId}`);
-    const openerTab = await browser.tabs.get(tab.openerTabId);
-    if (tab.url === openerTab.url) {
-      // on duplicated, onCommited WON'T be called (tabs.onUpdated only)
-      // how to detect duplicated? this function is called first
-      // 1. duplicate at all cases(done) and delete later at onCommited
-      log(`tab ${tab.id} is duplicated or clicked same url`);
-      const focusAtOpenerTab = await db.focus
-        .where("tabId")
-        .equals(tab.openerTabId)
-        .first();
-      if (!focusAtOpenerTab) throw new Error("no focus at opener tab");
-      await db.focus.add({
-        ...focusAtOpenerTab,
-        id: undefined,
-        tabId,
-      });
-    } else {
-      // by link?
-      const focusAtOpenerTab = await db.focus
-        .where("tabId")
-        .equals(tab.openerTabId)
-        .first();
-      if (!focusAtOpenerTab) throw new Error("no focus at opener tab");
-      await db.focus.add({
-        ...focusAtOpenerTab,
-        id: undefined,
-        tabId,
-      });
-      log(`tab ${tab.id} is opened by link`);
-    }
+  // 新規タブが作成された
+  log("tabs.onUpdated: " + tabId);
+});
+
+browser.tabs.onRemoved.addListener(async (tabId) => {
+  // タブが閉じられた
+  log("tabs.onRemoved: " + tabId);
+  openedTabs.delete(tabId);
+  const focus = await db.focus.where("tabId").equals(tabId).first();
+  if (focus) {
+    // focusが存在する場合削除
+    ensureId(focus);
+    await db.focus.delete(focus.id);
+  } else {
+    // 存在しない場合は本来の設計としておかしい
+    log("tab closed but focus not found...?");
   }
 });
 
@@ -89,100 +119,45 @@ browser.history.onVisitRemoved.addListener((r) => {
 interface ExtendedVisitItem extends browser.History.VisitItem {
   url: string;
 }
-
-// these are for bfDetect
-const extendedVisitItemCache = new Map<string, ExtendedVisitItem>();
-let preFocused = "-1";
-
-// browser.history.onTitleChanged.addListener(console.log);
-browser.webNavigation.onCommitted.addListener(async (r) => {
-  const visits = await browser.history.getVisits({
-    url: r.url,
-  });
-  // sort visits by visitId, DESC
-  visits.sort((a, b) => {
-    // caveat: visitId might not be integer
-    return parseInt(b.visitId) - parseInt(a.visitId);
-  });
-  // cache all visits for bfDetect
-  for (const v of visits) {
-    extendedVisitItemCache.set(v.visitId, { url: r.url, ...v });
-  }
-  // transition happened!
-  if (
-    r.transitionType == "link" ||
-    r.transitionType == "form_submit" ||
-    r.transitionType == "generated"
-  ) {
-    log("=".repeat(10));
-    log("onCommited:");
-    // log(r);
-    // log(visits.length);
-
-    // NOTE: this won't work for onHistoryStateUpdated (on chrome?)
-    // bfDetect
-    const lastVisit = visits[0];
-    // log("Last visit:");
-    // log(lastVisit ?? "Not Found!!");
-
-    // log("Refering (extended)Visit of last visit:");
-    // const referingVisit = extendedVisitItemCache.get(
-    //   lastVisit.referringVisitId
-    // );
-    // log(referingVisit ?? "Not Found!!");
-    // if (referingVisit) {
-    //   log("More Refering (extended)Visit of last visit:");
-    //   log(extendedVisitItemCache.get(referingVisit.visitId) ?? "Not Found!!");
-    // }
-    // if (r.transitionQualifiers.includes("forward_back")) {
-    //   log("foward_back detected:");
-    //   if (referingVisit == null) {
-    //     log("back? (referingVisit null)");
-    //   } else {
-    //     if (preFocused === referingVisit.visitId) {
-    //       log("forward? (referingVisit same as preFocused)");
-    //     } else {
-    //       log("back?");
-    //     }
-    //   }
-    // }
-
-    // log("...and its historyitem");
-    // we can't get historyItem by id :(
-
-    preFocused = lastVisit.visitId;
-
-    try {
-      await processTransition(r);
-    } catch (e) {
-      if (e instanceof Error) {
-        log(e.message);
-      } else {
-        log(e);
-      }
-    }
-  }
-});
-
-const getFocus = async () => {
-  // const focused = await browser.windows.getLastFocused();
-};
-
 const processTransition = async (
-  r: browser.WebNavigation.OnCommittedDetailsType
+  // r: browser.WebNavigation.OnCommittedDetailsType
+  r: { url: string; tabId: number; openerTabId?: number }
 ) => {
-  log("New/MoveTo " + r.url);
+  // ページが遷移した
+  // 新しいタブの場合、tabs.onUpdatedを待つ
+  // if(!openedTabs.has(r.tabId)) {
+  //   await waitForTabInfo(r.tabId);
+  // }
+  log("processTransition, New/MoveTo " + r.url);
+
+  // return;
   const focusAtThisTab = await db.focus.where("tabId").equals(r.tabId).first();
-  const openerTabId = newlyOpenedTabsAndOpener.get(r.tabId);
-  if (!focusAtThisTab && !openerTabId) {
-    log("focusAtTab and opener not found, create new tree");
+  const thisTabId = r.tabId;
+  // const openerTabId = newlyOpenedTabsAndOpener.get(r.tabId);
+  let newTab = false;
+  if (!openedTabs.has(r.tabId)) {
+    newTab = true;
+    openedTabs.add(r.tabId);
+  }
+  // "他タブ要因によって""新しいタブ"が開かれた場合のみ元タブIDがセットされる
+  const tabNewlyOpenedByTabId = newTab ? r.openerTabId : null;
+  // 現在のフォーカス。タブが新しく開かれた場合、原因となったフォーカス。
+  const openerTabFocus = tabNewlyOpenedByTabId
+    ? await db.focus.where("tabId").equals(tabNewlyOpenedByTabId).first()
+    : await db.focus.where("tabId").equals(thisTabId).first();
+  log({
+    focus: await db.focus.toArray(),
+    newTab,
+    tabNewlyOpenedByTabId,
+    openerTabFocus,
+    thisTabId,
+  });
+  if (!openerTabFocus) {
+    log("this is independent tab, create new tree");
     // or tab is opened by another tab, ...
     // determine col number(absolute)
     const lastColNode = await db.node.orderBy("absolutePosition.col").last();
-    if (!lastColNode) {
-      throw new Error("no node!!");
-    }
-    const lastCol = lastColNode.absolutePosition.col;
+    const lastCol = lastColNode ? lastColNode.absolutePosition.col : -1;
     // determine absolutePosition
     const absolutePosition = { row: 0, col: lastCol + 1 };
     // create node at new tree
@@ -193,32 +168,19 @@ const processTransition = async (
     });
     await db.focus.add({ tabId: r.tabId, nodeId });
   } else {
-    let currentFocus: IFocus;
-    if (focusAtThisTab && !newlyOpenedTabsAndOpener.get(r.tabId)) {
-      log("focusAtTab found");
-      currentFocus = focusAtThisTab;
-    } else if (openerTabId) {
-      const focusAtOpenerTab = await db.focus
-        .where("tabId")
-        .equals(openerTabId)
-        .first();
-      if (!focusAtOpenerTab) {
-        throw new Error("focusAtOpenerTab not found! maybe create new tree?");
-      }
-      log("focusAtTab not found but opener found");
-      currentFocus = focusAtOpenerTab;
+    if (tabNewlyOpenedByTabId !== thisTabId) {
+      log("this is dependent tab");
     } else {
-      throw new Error("something is wrong (condition mismatch)");
+      log("this is on same tab");
     }
-
     // create or move?
-    const nodeId = currentFocus.nodeId;
-    const node = await db.node.get(nodeId);
-    if (!node) {
-      throw new Error("node specified at currentFocus was missing");
+    const openerNodeId = openerTabFocus.nodeId;
+    const openerNode = await db.node.get(openerNodeId);
+    if (!openerNode) {
+      throw new Error("openerNode not found");
     }
 
-    const children = await db.node.bulkGet(node.childrenIds);
+    const children = await db.node.bulkGet(openerNode.childrenIds);
     if (!checkFullArray(children)) throw new Error("children has undefined");
     let moveToNode = (
       await Promise.all(
@@ -227,8 +189,8 @@ const processTransition = async (
     )[0];
 
     // determine parent first? (perf)
-    if (node.parentId) {
-      const parent = await db.node.get(node.parentId);
+    if (openerNode.parentId) {
+      const parent = await db.node.get(openerNode.parentId);
       if (parent && parent.url === r.url) {
         moveToNode = parent;
       }
@@ -237,7 +199,12 @@ const processTransition = async (
     if (moveToNode) {
       // move!
       log("just move focus!");
-      await db.focus.update(currentFocus, { nodeId: moveToNode.id });
+      ensureId(moveToNode);
+      if (newTab) {
+        await db.focus.add({ nodeId: moveToNode.id, tabId: thisTabId });
+      } else {
+        await db.focus.update(openerTabFocus, { nodeId: moveToNode.id });
+      }
     } else {
       // create and move focus!
       log("create and move focus!");
@@ -247,9 +214,9 @@ const processTransition = async (
         row: 0,
       }; // just a place holder
       // 1a.if no child, let's just place row+1
-      if (node.childrenIds.length === 0) {
-        targetPosAbs.col = node.absolutePosition.col;
-        targetPosAbs.row = node.absolutePosition.row + 1;
+      if (openerNode.childrenIds.length === 0) {
+        targetPosAbs.col = openerNode.absolutePosition.col;
+        targetPosAbs.row = openerNode.absolutePosition.row + 1;
       }
       // 1b.if has child(ren), let's place next(right) to it
       else {
@@ -291,17 +258,22 @@ const processTransition = async (
       }
       const newNodeId = await db.node.add({
         url: r.url,
-        parentId: nodeId,
+        parentId: openerNodeId,
         childrenIds: [],
         absolutePosition: targetPosAbs,
       });
-      await db.node.update(node, {
-        childrenIds: [...node.childrenIds, newNodeId],
+      await db.node.update(openerNode, {
+        childrenIds: [...openerNode.childrenIds, newNodeId],
       });
-      if (!focusAtThisTab) throw new Error("focusAtThisTab not found");
-      await db.focus.update(focusAtThisTab, {
-        nodeId: newNodeId,
-      });
+      if (newTab) {
+        await db.focus.add({ nodeId: newNodeId, tabId: thisTabId });
+      } else {
+        if (!focusAtThisTab)
+          throw new Error("trying to update focusAtThisTab but not found");
+        await db.focus.update(focusAtThisTab, {
+          nodeId: newNodeId,
+        });
+      }
     }
   }
 };
