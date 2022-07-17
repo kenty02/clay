@@ -1,10 +1,11 @@
-import { Node } from "./Node";
-import React, { ComponentProps, useEffect, useRef, useState } from "react";
+import {Node} from "./Node";
+import React, {useEffect, useRef, useState} from "react";
 import browser from "webextension-polyfill";
-import { FixedSizeList as List } from "react-window";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "src/db";
-import { log } from "../utils";
+import {FixedSizeGrid as Grid, GridChildComponentProps,} from "react-window";
+import {useLiveQuery} from "dexie-react-hooks";
+import {db} from "src/db";
+import {ensureId} from "../utils";
+import {ArcherContainer, ArcherElement} from "react-archer";
 
 (async () => {
   const thisTab = await browser.tabs.getCurrent();
@@ -36,12 +37,17 @@ const useHistories = (url: string) => {
   return history;
 };
 
-const RowInColumn = ({ index, style, col }) => {
-  const node = useNodeAt(col, index);
+const Cell: React.VFC<GridChildComponentProps> = ({
+  columnIndex,
+  rowIndex,
+  style,
+}) => {
+  const node = useNodeAt(columnIndex, rowIndex);
   const focus = useFocusAt(node?.id ?? -1);
   const histories = useHistories(node?.url ?? "");
   const history = histories.length > 0 ? histories[0] : undefined;
-  const ref = useRef<any>();
+  node && ensureId(node);
+
   return (
     <div style={style} className="px-2">
       {/* <Node */}
@@ -50,38 +56,46 @@ const RowInColumn = ({ index, style, col }) => {
       {/*   url="https://google.com" */}
       {/* /> */}
       {node ? (
-        <Node
-          title={`${history?.title ?? history?.url ?? ""}`}
-          iconUrl={"chrome://favicon/" + history?.url}
-          url={node.url}
-          isFocused={!!focus}
-          ref={ref}
-        />
+        <>
+          <ArcherElement
+            id={`ae-node-${node.id}-top`}
+            relations={
+              node.parentId
+                ? [
+                    {
+                      targetId: `ae-node-${node.parentId}-bottom`,
+                      targetAnchor: "top",
+                      sourceAnchor: "bottom",
+                      // label: `node ${node.id} to parent ${node.parentId ?? -1}`,
+                      style: {
+                        strokeColor: "blue",
+                        strokeWidth: 2,
+                        startMarker: false,
+                        endMarker: false,
+                      },
+                    },
+                  ]
+                : []
+            }
+          >
+            <div>{/* top */}</div>
+          </ArcherElement>
+          {/* prevent strange ref warning */}
+          <Node
+            title={`${history?.title ?? history?.url ?? ""}`}
+            iconUrl={"chrome://favicon/" + history?.url}
+            url={node.url}
+            focus={focus && (focus.active ? "main" : "sub")}
+          />
+
+          <ArcherElement id={`ae-node-${node.id}-bottom`}>
+            <div>{/* bottom */}</div>
+          </ArcherElement>
+        </>
       ) : null}
     </div>
   );
 };
-const RowInColumnAt = (col: number) => {
-  return (props: Omit<ComponentProps<typeof RowInColumn>, "col">) =>
-    RowInColumn({ col, ...props });
-};
-const columnWidth = 350;
-const Column = ({ index, style }) => (
-  <div style={style}>
-    <List
-      height={1000}
-      itemCount={10}
-      itemSize={150}
-      layout="vertical"
-      width={columnWidth}
-      // direction="rtl"
-      // style={style}
-      className="no-scrollbars"
-    >
-      {RowInColumnAt(index)}
-    </List>
-  </div>
-);
 export const DebugPallet: React.VFC = () => {
   const handleResetButton = () => {
     window.indexedDB.deleteDatabase("spile");
@@ -98,6 +112,15 @@ export const DebugPallet: React.VFC = () => {
 };
 
 export const Option: React.VFC = () => {
+  const ref = useRef<ArcherContainer>(null);
+  const refresh = () => {
+    ref.current?.refreshScreen();
+  };
+  // just rerender for ref set
+  const [, setState] = useState<number>(0);
+  useEffect(() => {
+    setState(1);
+  });
   return (
     <>
       {/* <Node */}
@@ -106,17 +129,34 @@ export const Option: React.VFC = () => {
       {/*   url="https://google.com" */}
       {/* /> */}
       <DebugPallet />
-      <List
-        height={5000}
-        itemCount={1000}
-        itemSize={columnWidth}
-        layout="horizontal"
-        width={3000}
-        // direction="rtl"
-        className="bg-gray-300"
-      >
-        {Column}
-      </List>
+      {/* <List */}
+      {/*   height={5000} */}
+      {/*   itemCount={1000} */}
+      {/*   itemSize={columnWidth} */}
+      {/*   layout="horizontal" */}
+      {/*   width={3000} */}
+      {/*   // direction="rtl" */}
+      {/*   className="bg-gray-300" */}
+      {/* > */}
+      {/*   {Column} */}
+      {/* </List> */}
+      <ArcherContainer ref={ref} style={{ zIndex: 0, pointerEvents: "none" }}>
+        <Grid
+          columnCount={1000}
+          columnWidth={350}
+          rowCount={1000}
+          rowHeight={150}
+          height={5000}
+          width={3000}
+          // direction="rtl"
+          className="bg-gray-300"
+          // onScroll={refresh}
+          style={{ zIndex: -10, pointerEvents: "auto" }}
+          onScroll={refresh}
+        >
+          {Cell}
+        </Grid>
+      </ArcherContainer>
     </>
   );
 };

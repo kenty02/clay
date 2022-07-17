@@ -1,7 +1,7 @@
 import browser from "webextension-polyfill";
-import { onMessage } from "webext-bridge";
-import { db, IFocus } from "../db";
-import { checkFullArray, log, ensureId } from "../utils";
+import {onMessage} from "webext-bridge";
+import {db} from "../db";
+import {checkFullArray, ensureId, log} from "../utils";
 
 const optionUrl = browser.runtime.getURL("options/options.html");
 browser.tabs.create({ url: optionUrl });
@@ -44,6 +44,25 @@ const tabInfoSet = (tabId: number) => {
   }
 };
 
+browser.tabs.onActivated.addListener(async (activeInfo) => {
+  // FIXME: supports only single window
+  const allActiveFocus = await db.focus.filter((f) => f.active).toArray();
+  const focusAtThisTab = await db.focus
+    .where("tabId")
+    .equals(activeInfo.tabId)
+    .first();
+  if (!focusAtThisTab) {
+    log("no focus at active tabId " + activeInfo.tabId);
+    return;
+  }
+  for (const f of allActiveFocus) {
+    if (f.id !== focusAtThisTab.id) {
+      await db.focus.update(f, { active: false });
+    }
+  }
+  await db.focus.update(focusAtThisTab, { active: true });
+});
+
 let testCount = 0;
 // タブに関するあらゆる更新情報が来る
 // Duplicate&Newの際にフォーカス及びノードを正しく関連付けられるようにするため
@@ -85,8 +104,8 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     //   log("transitionInfo available")
     // }
   }
-  if (openedTabs.has(tabId)) return;
-  openedTabs.add(tabId);
+  // if (openedTabs.has(tabId)) return;
+  // openedTabs.add(tabId);
   // 新規タブが作成された
   log("tabs.onUpdated: " + tabId);
 });
@@ -135,12 +154,17 @@ const processTransition = async (
   const thisTabId = r.tabId;
   // const openerTabId = newlyOpenedTabsAndOpener.get(r.tabId);
   let newTab = false;
+  log(openedTabs.has(r.tabId));
   if (!openedTabs.has(r.tabId)) {
     newTab = true;
     openedTabs.add(r.tabId);
   }
   // "他タブ要因によって""新しいタブ"が開かれた場合のみ元タブIDがセットされる
-  const tabNewlyOpenedByTabId = newTab ? r.openerTabId : null;
+  let tabNewlyOpenedByTabId = newTab ? r.openerTabId : null;
+  // force newtab to new tree
+  if (r.url === "chrome://newtab/") {
+    tabNewlyOpenedByTabId = null;
+  }
   // 現在のフォーカス。タブが新しく開かれた場合、原因となったフォーカス。
   const openerTabFocus = tabNewlyOpenedByTabId
     ? await db.focus.where("tabId").equals(tabNewlyOpenedByTabId).first()
@@ -166,7 +190,7 @@ const processTransition = async (
       childrenIds: [],
       absolutePosition,
     });
-    await db.focus.add({ tabId: r.tabId, nodeId });
+    await db.focus.add({ tabId: r.tabId, nodeId, active:false });
   } else {
     if (tabNewlyOpenedByTabId !== thisTabId) {
       log("this is dependent tab");
@@ -201,7 +225,7 @@ const processTransition = async (
       log("just move focus!");
       ensureId(moveToNode);
       if (newTab) {
-        await db.focus.add({ nodeId: moveToNode.id, tabId: thisTabId });
+        await db.focus.add({ nodeId: moveToNode.id, tabId: thisTabId, active:false });
       } else {
         await db.focus.update(openerTabFocus, { nodeId: moveToNode.id });
       }
@@ -266,7 +290,7 @@ const processTransition = async (
         childrenIds: [...openerNode.childrenIds, newNodeId],
       });
       if (newTab) {
-        await db.focus.add({ nodeId: newNodeId, tabId: thisTabId });
+        await db.focus.add({ nodeId: newNodeId, tabId: thisTabId, active:false });
       } else {
         if (!focusAtThisTab)
           throw new Error("trying to update focusAtThisTab but not found");

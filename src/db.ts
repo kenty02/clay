@@ -18,6 +18,7 @@ export interface IFocus {
   id?: number;
   nodeId: number;
   tabId: number;
+  active: boolean;
 }
 export interface IComment {
   id?: number;
