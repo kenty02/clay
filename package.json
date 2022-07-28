@@ -11,7 +11,8 @@
     "start:chrome": "ts-node -T ./scripts/build.ts",
     "start:firefox": "web-ext run -s dist/chrome",
     "check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@babel/core": "^7.17.7",
@@ -49,6 +50,7 @@
     "ws": "^8.5.0"
   },
   "dependencies": {
+    "patch-package": "^6.4.7",
     "daisyui": "^2.6.4",
     "react": "^17.0.2",
     "react-archer": "^3.3.0",
