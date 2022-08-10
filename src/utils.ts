@@ -9,6 +9,16 @@ export const log = (message: Parameters<JSON["stringify"]>[0]) => {
   }
 };
 
+const logJsonServerSock = new WebSocket("ws://localhost:5002");
+// json形式のログを出力する（保存される)。
+export const logJson = (message: string) => {
+  if (logJsonServerSock.readyState === WebSocket.OPEN)
+    logJsonServerSock.send(message);
+  else {
+    logJsonServerSock.onopen = () => logJsonServerSock.send(message);
+  }
+};
+
 export const checkFullArray = <T>(array: (T | undefined)[]): array is T[] => {
   return array.indexOf(undefined) === -1;
 };

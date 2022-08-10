@@ -1,15 +1,20 @@
 import React from "react";
+import { IFocus } from "src/db";
+import { sendMessage } from "webext-bridge";
 
 type Props = {
   title: string;
   url: string;
   iconUrl: string;
-  focus?: "main" | "sub";
+  focus?: IFocus;
 };
 
 export const Node: React.VFC<Props> = ({ title, url, iconUrl, focus }) => {
   // a button to open example.com
   const truncatedUrl = url.length > 30 ? `${url.slice(0, 30)}...` : url;
+  const onClick = () => {
+    if (focus) sendMessage("selectFocus", { focusId: focus.id }, "background");
+  };
 
   return (
     <>
@@ -22,13 +27,17 @@ export const Node: React.VFC<Props> = ({ title, url, iconUrl, focus }) => {
           <img
             className={`h-12 w-12 bg-white rounded-full ${
               focus && "ring-4 ring-offset-2 ring-green-400"
-            } ${focus === "sub" ? "outline-dashed" : ""}`}
+            } ${focus && !focus.active ? "outline-dashed" : ""}`}
             src={iconUrl}
             alt={title}
           />
         </div>
         <div>
-          <a href={url} className="text-sm font-medium text-black">
+          <a
+            href="#"
+            onClick={onClick}
+            className="text-sm font-medium text-black"
+          >
             {title}
           </a>
           <br />

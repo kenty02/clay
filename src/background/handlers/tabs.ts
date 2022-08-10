@@ -1,11 +1,12 @@
 import browser from "webextension-polyfill";
 import {db} from "../../db";
-import {ensureId, log} from "../../utils";
-import {processTransition} from "../index";
+import {ensureId, log, logJson} from "../../utils";
+import {handleUrlChanged} from "../index";
 
 export const openedTabs = new Set<number>();
 export const handleTabEvents = () => {
     browser.tabs.onActivated.addListener(async (activeInfo) => {
+        logJson(JSON.stringify({type: "tabs.onActivated", ...activeInfo}))
         // FIXME: supports only single window
         const allActiveFocus = await db.focus.filter((f) => f.active).toArray();
         const focusAtThisTab = await db.focus
@@ -29,6 +30,7 @@ export const handleTabEvents = () => {
 // Duplicate&Newの際にフォーカス及びノードを正しく関連付けられるようにするため
 // 特に、タブを複製した場合onCommitedは呼ばれずこっちのみが呼ばれる
     browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+        logJson(JSON.stringify({type: "tabs.onUpdated", tabId,changeInfo,tab}))
         if (!tab.url) {
             throw new Error("tabs permission not granted?");
         }
@@ -47,7 +49,7 @@ export const handleTabEvents = () => {
                 JSON.stringify({tabId, changeInfo, tab}, null, 2)
             );
             try {
-                await processTransition({
+                await handleUrlChanged({
                     url: tab.url,
                     tabId,
                     openerTabId: tab.openerTabId,
@@ -72,6 +74,7 @@ export const handleTabEvents = () => {
     });
 
     browser.tabs.onRemoved.addListener(async (tabId) => {
+        logJson(JSON.stringify({type: "tabs.onRemoved", tabId}))
         // タブが閉じられた
         log("tabs.onRemoved: " + tabId);
         openedTabs.delete(tabId);

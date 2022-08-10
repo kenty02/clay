@@ -74,6 +74,20 @@ const startLogServer = () => {
   console.log("started log server at port 5001");
 };
 
+const startJsonLogServer = () => {
+  const s = new Server({ port: 5002 });
+
+  s.on("connection", (ws) => {
+    ws.on("message", (message) => {
+      // convert to string
+      const messageString = message.toString();
+      // append to file
+      fs.appendFile("./debug.log", messageString + "\n");
+    });
+  });
+  console.log("started log server at port 5002");
+};
+
 (async () => {
   const watchMode = true;
   const watch: Parameters<typeof build>[0] = watchMode
@@ -128,7 +142,10 @@ const startLogServer = () => {
   );
   // extensionRunner.reloadAllExtensions();
   // extensionRunner.exit();
-  if (watchMode) startLogServer();
+  if (watchMode) {
+    startLogServer();
+    startJsonLogServer();
+  }
   chokidar
     .watch("./src", { ignoreInitial: true })
     .on("all", async (event, path) => {

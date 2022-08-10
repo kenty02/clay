@@ -1,11 +1,11 @@
-import {Node} from "./Node";
-import React, {useEffect, useRef, useState} from "react";
+import { Node } from "./Node";
+import React, { useEffect, useRef, useState } from "react";
 import browser from "webextension-polyfill";
-import {FixedSizeGrid as Grid, GridChildComponentProps,} from "react-window";
-import {useLiveQuery} from "dexie-react-hooks";
-import {db} from "src/db";
-import {ensureId} from "../utils";
-import {ArcherContainer, ArcherElement} from "react-archer";
+import { FixedSizeGrid as Grid, GridChildComponentProps } from "react-window";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "src/db";
+import { ensureId } from "../utils";
+import { ArcherContainer, ArcherElement } from "react-archer";
 
 (async () => {
   const thisTab = await browser.tabs.getCurrent();
@@ -85,7 +85,7 @@ const Cell: React.VFC<GridChildComponentProps> = ({
             title={`${history?.title ?? history?.url ?? ""}`}
             iconUrl={"chrome://favicon/" + history?.url}
             url={node.url}
-            focus={focus && (focus.active ? "main" : "sub")}
+            focus={focus ?? null}
           />
 
           <ArcherElement id={`ae-node-${node.id}-bottom`}>
