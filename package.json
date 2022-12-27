@@ -1,22 +1,28 @@
 {
-  "name": "spile",
+  "name": "clay-host",
   "version": "1.0.0",
-  "description": "Next level browsing system.",
+  "description": "Clay Navigator",
   "main": "index.js",
   "author": "kenty02 <42216299+kenty02@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
-    "build": "",
-    "start": "yarn start:chrome",
-    "start:chrome": "ts-node -T ./scripts/build.ts",
-    "start:firefox": "web-ext run -s dist/chrome",
+    "build": "ts-node -T ./scripts/build.ts",
+    "start": "npm run start:chrome",
+    "start:chrome": "ts-node -T ./scripts/build.ts --watch",
+    "start:firefox": "echo not implemented",
     "check": "tsc --noEmit",
     "test": "jest",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "gen": "buf generate clay.proto"
   },
+  "workspaces": [
+    "tools/protoc-gen-clay-server"
+  ],
   "devDependencies": {
     "@babel/core": "^7.17.7",
     "@babel/preset-env": "^7.16.11",
+    "@bufbuild/protoc-gen-es": "^1.0.0",
+    "@bufbuild/protoplugin": "^1.0.0",
     "@types/jest": "^27.4.1",
     "@types/node": "^17.0.21",
     "@types/react": "^17.0.40",
@@ -50,13 +56,18 @@
     "ws": "^8.5.0"
   },
   "dependencies": {
-    "patch-package": "^6.4.7",
+    "@bufbuild/protobuf": "^1.0.0",
+    "@patternfly/react-core": "^4.250.1",
+    "@patternfly/react-log-viewer": "^4.87.21",
     "daisyui": "^2.6.4",
+    "patch-package": "^6.4.7",
     "react": "^17.0.2",
     "react-archer": "^3.3.0",
     "react-dom": "^17.0.2",
     "react-svg-connector": "^1.0.9",
     "react-window": "^1.8.6",
+    "reconnecting-websocket": "^4.4.0",
+    "rxjs": "^7.8.0",
     "webext-bridge": "^5.0.3",
     "webextension-polyfill": "^0.8.0"
   }

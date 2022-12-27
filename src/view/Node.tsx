@@ -12,8 +12,9 @@ type Props = {
 export const Node: React.VFC<Props> = ({ title, url, iconUrl, focus }) => {
   // a button to open example.com
   const truncatedUrl = url.length > 30 ? `${url.slice(0, 30)}...` : url;
-  const onClick = () => {
-    if (focus) sendMessage("selectFocus", { focusId: focus.id }, "background");
+  const onClick = async () => {
+    if (focus)
+      await sendMessage("selectFocus", { focusId: focus.id }, "background");
   };
 
   return (

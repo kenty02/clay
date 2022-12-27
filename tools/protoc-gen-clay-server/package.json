@@ -1,0 +1,26 @@
+{
+  "name": "protoc-gen-clay-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "protoc-gen-clay-server": "bin/protoc-gen-clay-server"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@bufbuild/protobuf": "^0.4.0",
+    "@bufbuild/protoc-gen-es": "^0.4.0",
+    "@bufbuild/protoplugin": "^0.4.0",
+    "tsx": "^3.12.1",
+    "typescript": "^4.9.4"
+  }
+}

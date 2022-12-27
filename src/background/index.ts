@@ -1,10 +1,59 @@
 import browser from "webextension-polyfill";
-import { db, INode, INodeWithoutPosition } from "../db";
-import { checkFullArray, ensureId, log } from "../utils";
+import { db, IFocus, INode, INodeWithoutPosition } from "../db";
+import { checkFullArray, ensureId, log, searchHistoryByUrl } from "../utils";
 import { handleTabEvents, openedTabs } from "./handlers/tabs";
 import { handleHistoryEvents } from "./handlers/history";
 import { handleCommands } from "./handlers/commands";
+import "webext-bridge";
 import { onMessage } from "webext-bridge";
+import ReconnectingWebSocket from "reconnecting-websocket";
+import { start as startClayRpcServer } from "clay-rpc-server";
+import { ClayController } from "../clay-rpc";
+import { Focus, NodeUpdate } from "../clay-rpc/generated/clay_pb";
+
+startClayRpcServer(3006); // port needed to determined
+
+export const ws = new ReconnectingWebSocket("ws://localhost:3004");
+// const handleClosedOrError = () => {
+//   // let retried = 0;
+//   // const retry = () => {
+//   //   ws = new WebSocket("ws://localhost:3003");
+//   //   const onError = () => {
+//   //     retried++;
+//   //     log(`attempt ${retried} failed, retrying...`);
+//   //     setTimeout(retry, 1000);
+//   //   };
+//   //   const onOpen = () => {
+//   //     log("reconnected");
+//   //     retried = 0;
+//   //     ws.removeEventListener("error", onError);
+//   //     ws.removeEventListener("open", onOpen);
+//   //   };
+//   //   ws.addEventListener("error", onError);
+//   //   ws.addEventListener("open", onOpen);
+//   // };
+//   log("reconnecting...");
+//   ws = new WebSocket("ws://localhost:3003");
+//   // retry();
+// };
+// ws.addEventListener("close", handleClosedOrError);
+// ws.addEventListener("error", handleClosedOrError);
+// const handleOpen = () => {
+//   log("connected");
+// };
+// ws.addEventListener("open", handleOpen);
+
+// onMessage("reconnectWS", () => {
+//   ws = new WebSocket("ws://localhost:3003");
+// });
+let connectionCount = 1;
+ws.onopen = () => {
+  connectionCount == 1 ? log("connected") : log("reconnected");
+  connectionCount++;
+};
+ws.onclose = () => {
+  log("reconnecting");
+};
 
 onMessage("selectFocus", async ({ data }) => {
   // @ts-expect-error TODO: add data type
@@ -16,12 +65,12 @@ onMessage("selectFocus", async ({ data }) => {
   }
 
   // activate browser tab
-  browser.tabs.update(focus.tabId, { active: true });
+  await browser.tabs.update(focus.tabId, { active: true });
 });
 
-const optionUrl = browser.runtime.getURL("options/options.html");
+const viewUrl = browser.runtime.getURL("view/view.html");
 // stays in tab
-browser.tabs.create({ url: optionUrl }).then();
+void browser.tabs.create({ url: viewUrl });
 handleCommands();
 
 const newlyOpenedTabsAndOpener = new Map<number, number>();
@@ -42,6 +91,44 @@ export const handleUrlChanged = async (
 ) => {
   // URLが遷移した
   log("handleUrlChanged, New/MoveTo " + data.url);
+  const notifyNodeUpdate = async (node: INode) => {
+    const title = (await searchHistoryByUrl(node.url))[0].title;
+    ClayController.nodeUpdateSubject.next(
+      new NodeUpdate({
+        id: node.id!,
+        url: node.url,
+        parentId: node.parentId,
+        childrenIds: node.childrenIds,
+        title: title,
+      })
+    );
+
+    try {
+      ws.send(
+        JSON.stringify({
+          message: "node/update",
+          data: { ...node, title: title },
+        })
+      );
+    } catch {
+      log("ws closed");
+    }
+  };
+  const notifyFocusUpdate = (focus: IFocus) => {
+    ClayController.focusUpdateSubject.next(
+      new Focus({
+        id: focus.id!,
+        nodeId: focus.nodeId,
+        tabId: focus.tabId,
+        active: focus.active,
+      })
+    );
+    try {
+      ws.send(JSON.stringify({ message: "focus/update", data: focus }));
+    } catch {
+      log("ws closed");
+    }
+  };
 
   const computeTransitionInfo = async () => {
     // 対象タブID
@@ -89,12 +176,18 @@ export const handleUrlChanged = async (
     // determine absolutePosition
     const absolutePosition = { row: 0, col: lastCol + 1 };
     // create node at new tree
-    const nodeId = await db.node.add({
+    const newNode: INode = {
       url: data.url,
       childrenIds: [],
       absolutePosition,
-    });
-    await db.focus.add({ tabId: data.tabId, nodeId, active: false });
+    };
+    const nodeId = await db.node.add(newNode);
+    newNode.id = nodeId;
+    await notifyNodeUpdate(newNode);
+    const newFocus: IFocus = { tabId: data.tabId, nodeId, active: false };
+    const focusId = await db.focus.add(newFocus);
+    newFocus.id = focusId;
+    notifyFocusUpdate(newFocus);
   } else {
     // create or move?
     const openerFocusNodeId = transition.openerFocus.nodeId;
@@ -140,16 +233,20 @@ export const handleUrlChanged = async (
       ensureId(nodeMoveTo);
       if (transition.isNewTab) {
         // タブが複製された
-        await db.focus.add({
+        const newFocus: IFocus = {
           nodeId: nodeMoveTo.id,
           tabId: transition.tabId,
           active: false,
-        });
+        };
+        const focusId = await db.focus.add(newFocus);
+        newFocus.id = focusId;
+        notifyFocusUpdate(newFocus);
       } else {
         // 既存のタブでリンク遷移（元のページに戻る/進む）
         await db.focus.update(transition.openerFocus, {
           nodeId: nodeMoveTo.id,
         });
+        notifyFocusUpdate({ ...transition.openerFocus, nodeId: nodeMoveTo.id });
       }
     } else {
       // 既存のツリーにノード追加、フォーカス追加or移動
@@ -160,19 +257,23 @@ export const handleUrlChanged = async (
         openerFocusNode,
         openerNodeChildren
       );
+      await notifyNodeUpdate(newNode);
 
       if (transition.isNewTab) {
         // 「新しいタブで開く」
-        await db.focus.add({
+        const newFocus: IFocus = {
           nodeId: newNode.id,
           tabId: transition.tabId,
           active: false,
-        });
+        };
+        const focusId = await db.focus.add(newFocus);
+        notifyFocusUpdate({ ...newFocus, id: focusId });
       } else {
         // 既存のタブでリンク遷移
         await db.focus.update(transition.openerFocus, {
           nodeId: newNode.id,
         });
+        notifyFocusUpdate({ ...transition.openerFocus, nodeId: newNode.id });
       }
     }
   }

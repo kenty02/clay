@@ -5,7 +5,7 @@ describe.skip("background test", () => {
   beforeAll(async () => {
     // mock getUrl
     mockBrowser.runtime.getURL.mock(() => "https://example.com");
-    const bridgeSpy = jest
+    jest
       .spyOn(webExtBridge, "onMessage")
       .mockImplementationOnce((_mId, callback) => {
         callback({
@@ -19,7 +19,7 @@ describe.skip("background test", () => {
 
     await import("./index");
   });
-  it("should geURL of options.html", () => {
-    mockBrowser.runtime.getURL.expect("options.html");
+  it("can get URL of View", () => {
+    mockBrowser.runtime.getURL.expect("view.html");
   });
 });

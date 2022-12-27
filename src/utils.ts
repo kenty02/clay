@@ -1,11 +1,15 @@
+import browser from "webextension-polyfill";
+
 const logServerSock = new WebSocket("ws://localhost:5001");
 
 export const log = (message: Parameters<JSON["stringify"]>[0]) => {
   console.log(message);
-  if (typeof message !== "string") message = JSON.stringify(message, null, 2);
-  if (logServerSock.readyState === WebSocket.OPEN) logServerSock.send(message);
+  const messageString =
+    typeof message === "string" ? message : JSON.stringify(message, null, 2);
+  if (logServerSock.readyState === WebSocket.OPEN)
+    logServerSock.send(messageString);
   else {
-    logServerSock.onopen = () => logServerSock.send(message);
+    logServerSock.onopen = () => logServerSock.send(messageString);
   }
 };
 
@@ -37,4 +41,8 @@ export class IdSomehowNotFoundError extends Error {
   constructor() {
     super(`id somehow not found`);
   }
+}
+
+export function searchHistoryByUrl(url: string) {
+  return browser.history.search({ text: url });
 }

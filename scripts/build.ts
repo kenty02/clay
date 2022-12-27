@@ -26,9 +26,17 @@ const buildSingle = async (
     outdir,
     bundle: true,
     sourcemap: dev ? "inline" : false,
+    loader: {
+      ".png": "dataurl",
+      ".jpg": "dataurl",
+      ".svg": "dataurl",
+    },
     plugins: [
       sassPlugin({
-        async transform(source, ...rest) {
+        async transform(source, resolveDir, filePath) {
+          // skip css in node_modules
+          if (filePath.includes("node_modules")) return source;
+
           const out = await postcss(
             autoprefixer,
             // @ts-expect-error @types/tailwindcss is outdated
@@ -89,8 +97,8 @@ const startJsonLogServer = () => {
 };
 
 (async () => {
-  const watchMode = true;
-  const watch: Parameters<typeof build>[0] = watchMode
+  const watchMode = process.argv.includes("--watch");
+  const watchBuildOptions: Parameters<typeof build>[0] = watchMode
     ? {
         watch: {
           onRebuild(error, result) {
@@ -108,57 +116,70 @@ const startJsonLogServer = () => {
   await fs.mkdir("dist/chrome/options", { recursive: true });
   await fs.mkdir("dist/chrome/background", { recursive: true });
   await fs.mkdir("dist/chrome/content-scripts", { recursive: true });
+  await fs.mkdir("dist/chrome/view", { recursive: true });
 
   await copyFromSrcToDist("src/manifest.json");
   await copyFromSrcToDist("src/popup/popup.html");
   await copyFromSrcToDist("src/options/options.html");
+  await copyFromSrcToDist("src/view/view.html");
   await fs.cp("icons", "dist/chrome/icons", { recursive: true });
 
-  await buildSingle(["./src/popup/index.tsx"], "./dist/chrome/popup/", watch);
+  await buildSingle(
+    ["./src/popup/index.tsx"],
+    "./dist/chrome/popup/",
+    watchBuildOptions
+  );
   await buildSingle(
     ["./src/options/index.tsx"],
     "./dist/chrome/options/",
-    watch
+    watchBuildOptions
   );
   await buildSingle(
     ["./src/background/index.ts"],
     "./dist/chrome/background/",
-    watch
+    watchBuildOptions
   );
   await buildSingle(
     ["./src/content-scripts/index.ts"],
     "./dist/chrome/content-scripts/",
-    watch
+    watchBuildOptions
+  );
+  await buildSingle(
+    ["./src/view/index.tsx"],
+    "./dist/chrome/view/",
+    watchBuildOptions
   );
 
-  // NOTE: firefox android is supported
-  const extensionRunner = await webExt.cmd.run(
-    {
-      sourceDir: path.join(__dirname, "../dist/chrome/"),
-      target: "chromium",
-      noReload: true,
-    },
-    { shouldExitProgram: true }
-  );
-  // extensionRunner.reloadAllExtensions();
-  // extensionRunner.exit();
   if (watchMode) {
+    // NOTE: firefox android is supported
+    const extensionRunner = await webExt.cmd.run(
+      {
+        sourceDir: path.join(__dirname, "../dist/chrome/"),
+        target: "chromium",
+        noReload: true,
+      },
+      { shouldExitProgram: true }
+    );
+    // extensionRunner.reloadAllExtensions();
+    // extensionRunner.exit();
     startLogServer();
     startJsonLogServer();
+
+    chokidar
+      .watch("./src", { ignoreInitial: true })
+      .on("all", async (event, path) => {
+        console.log(event, path);
+        if (path.endsWith(".json"))
+          await copyFromSrcToDist("src/manifest.json");
+        else if (path.endsWith(".html")) {
+          await copyFromSrcToDist("src/popup/popup.html");
+          await copyFromSrcToDist("src/options/options.html");
+        } else if (path.endsWith(".tsx")) {
+          // zatu
+          return;
+        }
+        console.log("reloading!");
+        extensionRunner.reloadAllExtensions();
+      });
   }
-  chokidar
-    .watch("./src", { ignoreInitial: true })
-    .on("all", async (event, path) => {
-      console.log(event, path);
-      if (path.endsWith(".json")) await copyFromSrcToDist("src/manifest.json");
-      else if (path.endsWith(".html")) {
-        await copyFromSrcToDist("src/popup/popup.html");
-        await copyFromSrcToDist("src/options/options.html");
-      } else if (path.endsWith(".tsx")) {
-        // zatu
-        return;
-      }
-      console.log("reloading!");
-      extensionRunner.reloadAllExtensions();
-    });
 })();

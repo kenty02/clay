@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "Spile",
+  "name": "Clay",
   "version": "1.0.0",
   "description": "Faster browsing",
   "icons": {
@@ -24,21 +24,15 @@
     "default_option": "option/option.html"
   },
   "options_ui": {
-    "page": "options/options.html"
+    "page": "view/view.html"
   },
   "background": {
-    "scripts": [
-      "background/index.js"
-    ]
+    "scripts": ["background/index.js"]
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content-scripts/index.js"
-      ]
+      "matches": ["<all_urls>"],
+      "js": ["content-scripts/index.js"]
     }
   ],
   "commands": {
