@@ -6,6 +6,7 @@ import {
   setConnected,
 } from "clay-rpc-server";
 import { ClientMessage } from "./core/messageTypes";
+import { notifyUser } from "../background/utils";
 
 export function connectNativeRelay() {
   const port = browser.runtime.connectNative("net.hu2ty.clay_relay");
@@ -31,10 +32,12 @@ export function connectNativeRelay() {
     }
     if (typeof relayStatus === "string") {
       if (relayStatus === "open") {
-        log("Connected to server");
+        log("Connected to viewer");
+        void notifyUser("Viewer connected");
         setConnected(true);
       } else if (relayStatus === "close") {
-        log("Disconnected from server");
+        log("Disconnected from viewer");
+        void notifyUser("Viewer disconnected");
         setConnected(false);
         disposeHandlers();
       } else {

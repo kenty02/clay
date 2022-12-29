@@ -13,6 +13,8 @@
     "history",
     "webNavigation",
     "nativeMessaging",
+    "tabGroups",
+    "notifications",
     "<all_urls>"
   ],
   "browser_action": {

@@ -6,9 +6,9 @@ import { handleHistoryEvents } from "./handlers/history";
 import { handleCommands } from "./handlers/commands";
 import "webext-bridge";
 import { onMessage } from "webext-bridge";
-import { ClayController } from "../clay-rpc/controllers";
+import { ClayController } from "../clay-rpc/controllers/clayController";
 import { Focus, NodeUpdate } from "../clay-rpc/generated/clay_pb";
-import {connectNativeRelay as startClayRpcServer} from "../clay-rpc/relayConnector";
+import { connectNativeRelay as startClayRpcServer } from "../clay-rpc/relayConnector";
 
 startClayRpcServer(); // port needed to determined
 
