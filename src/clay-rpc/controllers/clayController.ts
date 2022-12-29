@@ -5,11 +5,11 @@ import {
   HelloMessage,
   NodeUpdate,
   SelectFocusRequest,
-} from "./generated/clay_pb";
+} from "../generated/clay_pb";
 import { Observable, Subject } from "rxjs";
-import { ClayMethods } from "./generated/clay_clay-server";
+import { ClayMethods } from "../generated/clay_clay-server";
 import { Empty } from "@bufbuild/protobuf";
-import { db } from "../db";
+import { db } from "../../db";
 import browser from "webextension-polyfill";
 
 @ClayMethods()
