@@ -1,7 +1,7 @@
-import { Observable, Subject } from "rxjs";
+import { Observable, Subject, Subscription } from "rxjs";
 import { Message, protoBase64 } from "@bufbuild/protobuf";
-import ReconnectingWebSocket from "reconnecting-websocket";
 import { log } from "src/utils";
+import browser from "webextension-polyfill";
 
 export interface ServerMessage {
   id: number;
@@ -28,13 +28,59 @@ const assert = (condition: boolean, message: string, nothrow = false) => {
   }
 };
 
-export function start(port: number) {
-  // connect to websocket
-  const ws = new ReconnectingWebSocket(`ws://localhost:${port}`);
-  const handleMessage = getMessageHandler((data) => ws.send(data));
-  ws.onmessage = (event) => void handleMessage(event.data as string);
-  ws.onopen = () => {
-    log("Connected to server");
+let isConnected = false;
+
+export function start() {
+  const port = browser.runtime.connectNative("net.hu2ty.clay_relay");
+  port.onMessage.addListener(handleMessage);
+
+  const handleClientMessage = getMessageHandler((data) => {
+    port.postMessage(data);
+  });
+
+  let relayValidated = false;
+
+  function handleMessage(message: unknown) {
+    log(message);
+    // @ts-expect-error aaaa
+    const relayStatus = message.relayStatus; // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+    if (!relayValidated) {
+      if (typeof relayStatus === "string") {
+        if (relayStatus === "This is clay-relay") {
+          relayValidated = true;
+        }
+      }
+      return;
+    }
+    if (typeof relayStatus === "string") {
+      if (relayStatus === "open") {
+        log("Connected to server");
+        isConnected = true;
+      } else if (relayStatus === "close") {
+        log("Disconnected from server");
+        isConnected = false;
+        disposeHandlers();
+      } else {
+        log(`Unknown relay status ${relayStatus}`);
+      }
+      return;
+    }
+    void handleClientMessage(message as ClientMessage);
+  }
+
+  port.onDisconnect.addListener(handleDisconnect);
+
+  function handleDisconnect() {
+    log("Disconnected from relay!");
+    log(port.error);
+    isConnected = false;
+    disposeHandlers();
+  }
+
+  return () => {
+    port.disconnect();
+    port.onMessage.removeListener(handleMessage);
+    port.onDisconnect.removeListener(handleDisconnect);
   };
 }
 
@@ -43,10 +89,17 @@ interface IncomingClientStream<T> {
   subject: Subject<T>;
 }
 
+export const disposeHandlers = () => {
+  incomingClientStreams.clear();
+  while (serviceResponseSubscription.length > 0) {
+    const subscription = serviceResponseSubscription.pop();
+    subscription?.unsubscribe();
+  }
+};
 const incomingClientStreams = new Map<number, IncomingClientStream<any>>();
+const serviceResponseSubscription: Subscription[] = [];
 export const getMessageHandler =
-  (send: (data: string) => void) => async (data: string) => {
-    const message = JSON.parse(data) as ClientMessage;
+  (send: (data: object) => void) => async (message: ClientMessage) => {
     // get method
     const method = methods.get(`${message.service}/${message.method}`);
     assert(
@@ -89,34 +142,42 @@ export const getMessageHandler =
         );
         const response$ = response as Observable<Message>;
         // subscribe to stream
-        response$.subscribe({
+        const subscription = response$.subscribe({
           next: (value) => {
             const responseMessage: ServerMessage = {
               id: message.id,
               payload: protoBase64.enc(value.toBinary()),
               completed: isUnary || (!serverStream && method!.clientStream),
             };
-            send(JSON.stringify(responseMessage));
+            send(responseMessage);
           },
           error: (error) => {
             // TODO: error handling (send error to client?)
           },
           complete: () => {
+            unsub();
             if (!method!.serverStream) return; // if not server stream, don't send completed message
             const responseMessage: ServerMessage = {
               id: message.id,
               payload: "",
               completed: true,
             };
-            send(JSON.stringify(responseMessage));
+            send(responseMessage);
           },
         });
+        serviceResponseSubscription.push(subscription);
+        const unsub = () => {
+          const index = serviceResponseSubscription.indexOf(subscription);
+          if (index !== -1) {
+            serviceResponseSubscription.splice(index, 1);
+          }
+        };
       } else {
         const responseMessage: ServerMessage = {
           id: message.id,
           payload: protoBase64.enc(response.toBinary()),
         };
-        send(JSON.stringify(responseMessage));
+        send(responseMessage);
       }
     };
     if (isNonFirstResponse) {

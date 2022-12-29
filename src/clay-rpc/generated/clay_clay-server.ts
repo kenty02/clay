@@ -3,37 +3,20 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { Focus, GetFocusRequest, GetFocusResponse, HelloReply, HelloRequest, NodeUpdate, SelectFocusRequest } from "./clay_pb.js";
-import { CrpcMethod } from "clay-rpc-server";
+import { Focus, GetFocusRequest, GetFocusResponse, HelloMessage, NodeUpdate, SelectFocusRequest } from "./clay_pb.js";
 import { Empty } from "@bufbuild/protobuf";
 import { Observable } from "rxjs";
+import { CrpcMethod } from "clay-rpc-server";
 
-/**
- * The greeting service definition.
- *
- * @generated from service clay.Greeter
- */
-export interface GreeterController {
-  /**
-   * Sends a greeting
-   *
-   * @generated from rpc clay.Greeter.SayHello
-   */
-  sayHello(request: HelloRequest): Promise<HelloReply>;
-}
-
-export function GreeterMethods() {
-  return function (constructor: Function) {
-    for (const method of ["sayHello"]) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      CrpcMethod("clay.Greeter", "SayHello", false, false, HelloRequest, HelloReply)(constructor.prototype[method], method, descriptor);
-    }
-  };
-}
 /**
  * @generated from service clay.Clay
  */
 export interface ClayController {
+  /**
+   * @generated from rpc clay.Clay.Hello
+   */
+  hello(request: HelloMessage): Promise<HelloMessage>;
+
   /**
    * @generated from rpc clay.Clay.SubscribeNodeUpdates
    */
@@ -57,6 +40,10 @@ export interface ClayController {
 
 export function ClayMethods() {
   return function (constructor: Function) {
+    for (const method of ["hello"]) {
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      CrpcMethod("clay.Clay", "Hello", false, false, HelloMessage, HelloMessage)(constructor.prototype[method], method, descriptor);
+    }
     for (const method of ["getFocus"]) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       CrpcMethod("clay.Clay", "GetFocus", false, false, GetFocusRequest, GetFocusResponse)(constructor.prototype[method], method, descriptor);

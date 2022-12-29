@@ -12,6 +12,7 @@
     "activeTab",
     "history",
     "webNavigation",
+    "nativeMessaging",
     "<all_urls>"
   ],
   "browser_action": {

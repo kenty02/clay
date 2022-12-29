@@ -7,80 +7,39 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * The request message containing the user's name.
- *
- * @generated from message clay.HelloRequest
+ * @generated from message clay.HelloMessage
  */
-export class HelloRequest extends Message<HelloRequest> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  constructor(data?: PartialMessage<HelloRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime = proto3;
-  static readonly typeName = "clay.HelloRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HelloRequest {
-    return new HelloRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HelloRequest {
-    return new HelloRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HelloRequest {
-    return new HelloRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: HelloRequest | PlainMessage<HelloRequest> | undefined, b: HelloRequest | PlainMessage<HelloRequest> | undefined): boolean {
-    return proto3.util.equals(HelloRequest, a, b);
-  }
-}
-
-/**
- * The response message containing the greetings
- *
- * @generated from message clay.HelloReply
- */
-export class HelloReply extends Message<HelloReply> {
+export class HelloMessage extends Message<HelloMessage> {
   /**
    * @generated from field: string message = 1;
    */
   message = "";
 
-  constructor(data?: PartialMessage<HelloReply>) {
+  constructor(data?: PartialMessage<HelloMessage>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime = proto3;
-  static readonly typeName = "clay.HelloReply";
+  static readonly typeName = "clay.HelloMessage";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HelloReply {
-    return new HelloReply().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HelloMessage {
+    return new HelloMessage().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HelloReply {
-    return new HelloReply().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HelloMessage {
+    return new HelloMessage().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HelloReply {
-    return new HelloReply().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HelloMessage {
+    return new HelloMessage().fromJsonString(jsonString, options);
   }
 
-  static equals(a: HelloReply | PlainMessage<HelloReply> | undefined, b: HelloReply | PlainMessage<HelloReply> | undefined): boolean {
-    return proto3.util.equals(HelloReply, a, b);
+  static equals(a: HelloMessage | PlainMessage<HelloMessage> | undefined, b: HelloMessage | PlainMessage<HelloMessage> | undefined): boolean {
+    return proto3.util.equals(HelloMessage, a, b);
   }
 }
 

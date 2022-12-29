@@ -16,9 +16,9 @@ plugins:
     path: node_modules\.bin\protoc-gen-clay-server # TODO: support other than windows
     # also generate for unity here
   - name: csharp
-    out: C:/Users/kenty/cl-viewer/Assets/Scripts/ClayRPC/Generated
+    out: C:/Users/kenty/clay-viewer/Assets/Scripts/ClayRPC/Generated
   - name: clay
-    out: C:/Users/kenty/cl-viewer/Assets/Scripts/ClayRPC/Generated
+    out: C:/Users/kenty/clay-viewer/Assets/Scripts/ClayRPC/Generated
     opt: no_server
     path: C:\Users\kenty\dev\clay-rpc\client\grpc\bazel-bin\src\compiler\grpc_clay_csharp_plugin.exe # TODO
 

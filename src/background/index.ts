@@ -6,54 +6,11 @@ import { handleHistoryEvents } from "./handlers/history";
 import { handleCommands } from "./handlers/commands";
 import "webext-bridge";
 import { onMessage } from "webext-bridge";
-import ReconnectingWebSocket from "reconnecting-websocket";
 import { start as startClayRpcServer } from "clay-rpc-server";
 import { ClayController } from "../clay-rpc";
 import { Focus, NodeUpdate } from "../clay-rpc/generated/clay_pb";
 
-startClayRpcServer(3006); // port needed to determined
-
-export const ws = new ReconnectingWebSocket("ws://localhost:3004");
-// const handleClosedOrError = () => {
-//   // let retried = 0;
-//   // const retry = () => {
-//   //   ws = new WebSocket("ws://localhost:3003");
-//   //   const onError = () => {
-//   //     retried++;
-//   //     log(`attempt ${retried} failed, retrying...`);
-//   //     setTimeout(retry, 1000);
-//   //   };
-//   //   const onOpen = () => {
-//   //     log("reconnected");
-//   //     retried = 0;
-//   //     ws.removeEventListener("error", onError);
-//   //     ws.removeEventListener("open", onOpen);
-//   //   };
-//   //   ws.addEventListener("error", onError);
-//   //   ws.addEventListener("open", onOpen);
-//   // };
-//   log("reconnecting...");
-//   ws = new WebSocket("ws://localhost:3003");
-//   // retry();
-// };
-// ws.addEventListener("close", handleClosedOrError);
-// ws.addEventListener("error", handleClosedOrError);
-// const handleOpen = () => {
-//   log("connected");
-// };
-// ws.addEventListener("open", handleOpen);
-
-// onMessage("reconnectWS", () => {
-//   ws = new WebSocket("ws://localhost:3003");
-// });
-let connectionCount = 1;
-ws.onopen = () => {
-  connectionCount == 1 ? log("connected") : log("reconnected");
-  connectionCount++;
-};
-ws.onclose = () => {
-  log("reconnecting");
-};
+startClayRpcServer(); // port needed to determined
 
 onMessage("selectFocus", async ({ data }) => {
   // @ts-expect-error TODO: add data type
@@ -70,7 +27,7 @@ onMessage("selectFocus", async ({ data }) => {
 
 const viewUrl = browser.runtime.getURL("view/view.html");
 // stays in tab
-void browser.tabs.create({ url: viewUrl });
+void browser.tabs.create({ url: viewUrl, active: false });
 handleCommands();
 
 const newlyOpenedTabsAndOpener = new Map<number, number>();
@@ -84,6 +41,29 @@ interface ExtendedVisitItem extends browser.History.VisitItem {
   url: string;
 }
 
+export const notifyNodeUpdate = async (node: INode) => {
+  const title = (await searchHistoryByUrl(node.url))[0].title;
+  ClayController.nodeUpdateSubject.next(
+    new NodeUpdate({
+      id: node.id!,
+      url: node.url,
+      parentId: node.parentId,
+      childrenIds: node.childrenIds,
+      title: title,
+    })
+  );
+};
+export const notifyFocusUpdate = (focus: IFocus) => {
+  ClayController.focusUpdateSubject.next(
+    new Focus({
+      id: focus.id!,
+      nodeId: focus.nodeId,
+      tabId: focus.tabId,
+      active: focus.active,
+    })
+  );
+};
+
 // 既存タブのURL変更、または新しいタブ作成時に呼び出し
 export const handleUrlChanged = async (
   // data: browser.WebNavigation.OnCommittedDetailsType
@@ -91,44 +71,6 @@ export const handleUrlChanged = async (
 ) => {
   // URLが遷移した
   log("handleUrlChanged, New/MoveTo " + data.url);
-  const notifyNodeUpdate = async (node: INode) => {
-    const title = (await searchHistoryByUrl(node.url))[0].title;
-    ClayController.nodeUpdateSubject.next(
-      new NodeUpdate({
-        id: node.id!,
-        url: node.url,
-        parentId: node.parentId,
-        childrenIds: node.childrenIds,
-        title: title,
-      })
-    );
-
-    try {
-      ws.send(
-        JSON.stringify({
-          message: "node/update",
-          data: { ...node, title: title },
-        })
-      );
-    } catch {
-      log("ws closed");
-    }
-  };
-  const notifyFocusUpdate = (focus: IFocus) => {
-    ClayController.focusUpdateSubject.next(
-      new Focus({
-        id: focus.id!,
-        nodeId: focus.nodeId,
-        tabId: focus.tabId,
-        active: focus.active,
-      })
-    );
-    try {
-      ws.send(JSON.stringify({ message: "focus/update", data: focus }));
-    } catch {
-      log("ws closed");
-    }
-  };
 
   const computeTransitionInfo = async () => {
     // 対象タブID

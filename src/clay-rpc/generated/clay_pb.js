@@ -6,24 +6,10 @@
 import { proto3 } from "@bufbuild/protobuf";
 
 /**
- * The request message containing the user's name.
- *
- * @generated from message clay.HelloRequest
+ * @generated from message clay.HelloMessage
  */
-export const HelloRequest = proto3.makeMessageType(
-  "clay.HelloRequest",
-  () => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ],
-);
-
-/**
- * The response message containing the greetings
- *
- * @generated from message clay.HelloReply
- */
-export const HelloReply = proto3.makeMessageType(
-  "clay.HelloReply",
+export const HelloMessage = proto3.makeMessageType(
+  "clay.HelloMessage",
   () => [
     { no: 1, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ],

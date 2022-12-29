@@ -1,16 +1,13 @@
 import browser from "webextension-polyfill";
 import { db } from "../../db";
 import { ensureId, log, logJson } from "../../utils";
-import { handleUrlChanged, ws } from "../index";
+import { handleUrlChanged, notifyFocusUpdate } from "../index";
 
 export const openedTabs = new Set<number>();
 export const handleTabEvents = () => {
   browser.tabs.onActivated.addListener((activeInfo) => {
     (async () => {
       logJson(JSON.stringify({ type: "tabs.onActivated", ...activeInfo }));
-      ws.send(
-        JSON.stringify({ message: "tabs.onActivated", data: activeInfo })
-      );
       // FIXME: supports only single window
       const allActiveFocus = await db.focus.filter((f) => f.active).toArray();
       const focusAtThisTab = await db.focus
@@ -24,9 +21,11 @@ export const handleTabEvents = () => {
       for (const f of allActiveFocus) {
         if (f.id !== focusAtThisTab.id) {
           await db.focus.update(f, { active: false });
+          notifyFocusUpdate({ ...f, active: false });
         }
       }
       await db.focus.update(focusAtThisTab, { active: true });
+      notifyFocusUpdate({ ...focusAtThisTab, active: true });
     })().catch(console.error);
   });
 
