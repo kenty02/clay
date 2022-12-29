@@ -53,6 +53,7 @@ export function connectNativeRelay() {
   function handleDisconnect() {
     log("Disconnected from relay!");
     log(port.error);
+    void notifyUser("Disconnected from relay!");
     setConnected(false);
     disposeHandlers();
   }
