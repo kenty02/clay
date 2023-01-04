@@ -59,7 +59,9 @@
     "@bufbuild/protobuf": "^1.0.0",
     "@patternfly/react-core": "^4.250.1",
     "@patternfly/react-log-viewer": "^4.87.21",
+    "@trpc/server": "^10.7.0",
     "daisyui": "^2.6.4",
+    "events": "^3.3.0",
     "patch-package": "^6.4.7",
     "react": "^17.0.2",
     "react-archer": "^3.3.0",
@@ -68,6 +70,7 @@
     "react-window": "^1.8.6",
     "rxjs": "^7.8.0",
     "webext-bridge": "^5.0.3",
-    "webextension-polyfill": "^0.8.0"
+    "webextension-polyfill": "^0.8.0",
+    "zod": "^3.20.2"
   }
 }

@@ -9,8 +9,10 @@ import { onMessage } from "webext-bridge";
 import { ClayController } from "../clay-rpc/controllers/clayController";
 import { Focus, NodeUpdate } from "../clay-rpc/generated/clay_pb";
 import { connectNativeRelay as startClayRpcServer } from "../clay-rpc/relayConnector";
+import { connectNativeRelay } from "../trpc/wsServer";
+import "../trpc/wsServer"; // todo test
 
-startClayRpcServer(); // port needed to determined
+connectNativeRelay();
 
 onMessage("selectFocus", async ({ data }) => {
   // @ts-expect-error TODO: add data type
