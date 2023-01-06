@@ -5,6 +5,6 @@ export function notifyUser(message: string) {
     type: "basic",
     title: "Clay",
     message,
-    iconUrl: browser.runtime.getURL("icons/icon-32.png"),
+    iconUrl: browser.runtime.getURL("icon-32.png"),
   });
 }

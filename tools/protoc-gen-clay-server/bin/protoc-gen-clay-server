@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-
-const {runNodeJs} = require("@bufbuild/protoplugin");
-const {protocGenClayServer} = require("../dist/protoc-gen-clay-server");
-
-runNodeJs(protocGenClayServer);
