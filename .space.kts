@@ -20,7 +20,7 @@ job("Build windows") {
                 curl -f -L -H "Authorization: Bearer ${'$'}JB_SPACE_CLIENT_TOKEN" -o latest.txt ${'$'}REPO_URL/${'$'}REF_PATH
                 LATEST_RELAY=$(cat latest.txt) # e.g. clay-relay/builds/1/
 
-                mkdir -p ./bin/${'$'}OS
+                mkdir -p ./relay/${'$'}OS
                 curl -f -L -H "Authorization: Bearer ${'$'}JB_SPACE_CLIENT_TOKEN" -o ./relay/${'$'}OS/clay-relay${'$'}EXT ${'$'}REPO_URL/${'$'}{LATEST_RELAY}clay-relay${'$'}EXT
 
                 echo Building
