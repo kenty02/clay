@@ -19,8 +19,8 @@ job("Build for Chromium-based browsers") {
 
                 echo Done, zipping and uploading
                 zip -r clay-host.zip dist/
-                SOURCE_PATH=clay-host-${'$'}JB_SPACE_EXECUTION_NUMBER.zip
-                TARGET_PATH=clay-host/
+                SOURCE_PATH=clay-host.zip
+                TARGET_PATH=clay-host/${'$'}JB_SPACE_EXECUTION_NUMBER/
                 REPO_URL=https://files.pkg.jetbrains.space/npathy/p/clay/files
                 curl -i -H "Authorization: Bearer ${'$'}JB_SPACE_CLIENT_TOKEN" -F file=@"${'$'}SOURCE_PATH" ${'$'}REPO_URL/${'$'}TARGET_PATH
             """.trimIndent()
