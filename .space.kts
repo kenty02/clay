@@ -10,9 +10,9 @@ job("Build for Chromium-based browsers") {
             content = """
                 echo Install build deps
                 apk update
-                apk add --no-cache zip
+                apk add --no-cache zip curl
                 
-                echo Building (without type-checking and signing)
+                echo Building without type-checking and CWS key
                 npm install -g pnpm
                 pnpm install
                 npx vite build # TODO: use pnpm run build
