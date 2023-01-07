@@ -2,8 +2,10 @@
 
 An Electron application with React and TypeScript
 
+
 ## Recommended IDE Setup
 
+- WebStorm
 - [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 
 ## Project Setup
@@ -11,24 +13,24 @@ An Electron application with React and TypeScript
 ### Install
 
 ```bash
-$ npm install
+$ pnpm i
 ```
 
 ### Development
 
 ```bash
-$ npm run dev
+$ pnpm run dev
 ```
 
 ### Build
 
 ```bash
 # For windows
-$ npm run build:win
+$ pnpm run build:win
 
 # For macOS
-$ npm run build:mac
+$ pnpm run build:mac
 
 # For Linux
-$ npm run build:linux
+$ pnpm run build:linux
 ```
