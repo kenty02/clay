@@ -8,6 +8,9 @@ job("Build windows") {
   container(image = "electronuserland/builder:16-wine") {
     shellScript {
       content = """
+                set -e
+                set -x
+
                 # curl is already installed
                 REPO_URL=https://files.pkg.jetbrains.space/npathy/p/clay/files
                 OS=win
