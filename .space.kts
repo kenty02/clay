@@ -19,7 +19,7 @@ job("Build windows") {
                 LATEST_RELAY=$(cat latest.txt) # e.g. clay-relay/builds/1/
 
                 mkdir -p ./bin/${'$'}OS
-                curl -f -L -H "Authorization: Bearer ${'$'}JB_SPACE_CLIENT_TOKEN" -o ./bin/${'$'}OS/clay_relay${'$'}EXT ${'$'}REPO_URL/${'$'}{LATEST_RELAY}clay-relay${'$'}EXT
+                curl -f -L -H "Authorization: Bearer ${'$'}JB_SPACE_CLIENT_TOKEN" -o ./bin/${'$'}OS/clay-relay${'$'}EXT ${'$'}REPO_URL/${'$'}{LATEST_RELAY}clay-relay${'$'}EXT
 
                 echo Building
                 npm install -g pnpm
