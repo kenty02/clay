@@ -1,9 +1,19 @@
 const fs = require('fs')
 
-module.exports = async () => {
-  const ext = process.platform === 'darwin' ? '.app' : process.platform === 'win32' ? '.exe' : ''
+module.exports = async (context) => {
+  const ext =
+    context.electronPlatformName === 'darwin'
+      ? '.app'
+      : context.electronPlatformName === 'win32'
+      ? '.exe'
+      : ''
   const relayFileName = `clay-relay${ext}`
-  const os = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux'
+  const os =
+    context.electronPlatformName === 'darwin'
+      ? 'mac'
+      : context.electronPlatformName === 'win32'
+      ? 'win'
+      : 'linux'
   try {
     fs.statSync(`./relay/${os}/${relayFileName}`)
     console.log(`verifyRelay: Found ./relay/${os}/${relayFileName}`)
