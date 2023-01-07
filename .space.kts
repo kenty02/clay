@@ -8,9 +8,6 @@ job("Build for Chromium-based browsers") {
     container(image = "node:16-alpine") {
         shellScript {
             content = """
-                set -e
-                set -x
-                
                 echo Install build deps
                 apk update
                 apk add --no-cache zip curl
