@@ -40,3 +40,9 @@ npmRebuild: false
 publish:
   provider: generic
   url: https://example.com/auto-updates
+beforePack: build/verifyRelay.js
+extraResources:
+  - from: "relay/${os}"
+    to: "relay"
+    filter:
+      - "**/*"
