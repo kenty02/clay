@@ -8,7 +8,7 @@ job("Build for Chromium-based browsers") {
     container(image = "node:16-alpine") {
         shellScript {
             content = """
-                set -x
+                set -e
                 
                 echo Install build deps
                 apk update
