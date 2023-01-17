@@ -1,0 +1,15 @@
+diff --git a/dist/chunks/lib-100c1519.js b/dist/chunks/lib-100c1519.js
+index 851a45482612a7c110d1afd3026e4830ce7b80e2..38bdc084ff9c29cf44591c98611a5376ba039a7c 100644
+--- a/dist/chunks/lib-100c1519.js
++++ b/dist/chunks/lib-100c1519.js
+@@ -118,7 +118,9 @@ function getElectronChromeTarget() {
+ function startElectron(root, logger) {
+     ensureElectronEntryFile(root);
+     const electronPath = getElectronPath();
+-    const ps = node_child_process.spawn(electronPath, ['.']);
++    const remoteDebugPort = process.env.REMOTE_DEBUG_PORT || 9223;
++    console.log(`(electron-vite patch) REMOTE_DEBUG_PORT=${remoteDebugPort}.`);
++    const ps = node_child_process.spawn(electronPath, ['.', `--remote-debugging-port=${remoteDebugPort}`],)
+     ps.stdout.on('data', chunk => {
+         chunk.toString().trim() && logger.info(chunk.toString());
+     });
