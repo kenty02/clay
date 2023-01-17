@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && npm run build:vite",
+    "build:vite": "vite build --outDir dist-prod",
     "preview": "vite preview",
     "gen-types": "tsc --declaration --strict  --pretty ./src/trpc/router.ts --out server.js --emitDeclarationOnly"
   },

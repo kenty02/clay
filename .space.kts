@@ -20,7 +20,7 @@ job("Build for Chromium-based browsers") {
                 npx vite build # TODO: use pnpm run build
 
                 echo Done, zipping and uploading
-                zip -r clay-host.zip dist/
+                zip -r clay-host.zip dist-prod/
                 SOURCE_PATH=clay-host.zip
                 TARGET_PATH=clay-host/${'$'}JB_SPACE_EXECUTION_NUMBER/
                 REPO_URL=https://files.pkg.jetbrains.space/npathy/p/clay/files
