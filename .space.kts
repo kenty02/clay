@@ -9,11 +9,11 @@ job("Build for Chromium-based browsers") {
         shellScript {
             content = """
                 set -e
-                
+
                 echo Install build deps
                 apk update
                 apk add --no-cache zip curl
-                
+
                 echo Building without type-checking and CWS key
                 npm install -g pnpm
                 pnpm install
