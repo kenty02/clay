@@ -1,27 +1,33 @@
 import { Table } from '@mantine/core'
 import { trpc } from '../utils/trpc'
-import { useState } from 'react'
-import { useImmer } from 'use-immer'
-
-type NodeView = {
-  id: number
-  title: string
-}
+import { useEffect, useState } from 'react'
+import { useListState } from '@mantine/hooks'
 
 function NodeTableView(): JSX.Element {
   const [errors, setErrors] = useState<[number, unknown][]>([])
-  const [data, updateData] = useImmer<NodeView[]>([])
+  // idだけ使う
+  trpc.node
+  const { data: initialData } = trpc.node.getAllFocusedAndItsRelatives.useQuery(undefined, {
+    // 一回しか取得する必要ないため
+    staleTime: Infinity
+  })
+  const {
+    node: {
+      get: { invalidate }
+    }
+  } = trpc.useContext()
+  const [nodeIds, updateNodeIds] = useListState<number>([])
+  useEffect(() => {
+    if (initialData != null) updateNodeIds.setState(() => initialData.map((node) => node.id!))
+  }, [initialData])
+  const nodesQueryResults = trpc.useQueries((t) =>
+    nodeIds.map((id) => t.node.get({ nodeId: id! }, { staleTime: Infinity }))
+  )
   trpc.node.onUpdate.useSubscription(undefined, {
     onData: (data) => {
-      updateData((draft) => {
-        for (let i = 0; i < draft.length; i++) {
-          if (draft[i].id === data.id) {
-            draft[i] = data
-            return
-          }
-        }
-        draft.push(data)
-      })
+      const { id } = data
+      void invalidate({ nodeId: id })
+      if (!nodeIds.includes(id)) updateNodeIds.append(id)
     },
     onError: (error) => {
       console.error(error)
@@ -29,12 +35,16 @@ function NodeTableView(): JSX.Element {
     }
   })
 
-  const rows = data.map((row) => (
-    <tr key={row.id}>
-      <td>{row.id}</td>
-      <td>{row.title}</td>
-    </tr>
-  ))
+  // todo loadingでないものが含まれるので、その取り扱いを考える でもそもそもsuspense=trueなのでそうなるのが謎
+  const rows = nodesQueryResults
+    .map((r) => r.data)
+    .filter((n): n is Exclude<typeof n, undefined> => n != null)
+    .map((row) => (
+      <tr key={row.id}>
+        <td>{row.id}</td>
+        <td>{row.title}</td>
+      </tr>
+    ))
   return (
     <div>
       {errors.map(([id, error]) => (

@@ -12,20 +12,20 @@ function App(): JSX.Element {
       <NotificationsProvider position={'top-right'}>
         <Suspense fallback={<Text>Loading...</Text>}>
           <TrpcProvider>
+            <Text>Welcome to Mantine</Text>
+            <Button
+              onClick={(): void => {
+                location.reload()
+              }}
+            >
+              Reload
+            </Button>
             <ErrorBoundary
               FallbackComponent={ErrorFallback}
               onReset={(): void => {
                 // reset the state of your app so the error doesn't happen again
               }}
             >
-              <Text>Welcome to Mantine</Text>
-              <Button
-                onClick={(): void => {
-                  location.reload()
-                }}
-              >
-                Reload
-              </Button>
               <Suspense fallback={<Text>Loading...</Text>}>
                 <NodeTableView />
               </Suspense>

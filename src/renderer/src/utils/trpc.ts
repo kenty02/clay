@@ -1,4 +1,4 @@
 import { createTRPCReact } from '@trpc/react-query'
-import type { appRouter } from 'trpc/router'
+import type { AppRouter } from 'clay-host/src/trpc/router'
 
-export const trpc = createTRPCReact<typeof appRouter>()
+export const trpc = createTRPCReact<AppRouter>()
