@@ -1,9 +1,16 @@
 // start chrome
 import {execFile} from "child_process";
+import fs from "fs";
 
+const userDataDir = "./debug-chrome-user-data";
+if (!fs.existsSync(userDataDir)) {
+  fs.mkdirSync(userDataDir);
+}
+const userDataDirAbs = fs.realpathSync(userDataDir);
 var chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 var args = [
   "--remote-debugging-port=9222",
+  `--user-data-dir=${userDataDirAbs}`
 ]
   .concat(process.argv.slice(2));
 
