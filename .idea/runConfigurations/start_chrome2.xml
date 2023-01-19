@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="start-chrome" type="NodeJSConfigurationType" path-to-js-file="tools/start-chrome.mjs" working-dir="$PROJECT_DIR$/packages/host">
+    <method v="2" />
+  </configuration>
+</component>
