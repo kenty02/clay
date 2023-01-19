@@ -1,0 +1,16 @@
+diff --git a/dist/chunks/lib-ddb42891.js b/dist/chunks/lib-ddb42891.js
+index f257ebea1c5d34145af44692e133eb64542f8f01..c8a9088c6cd0bacd522a493694a7799b1872d4d1 100644
+--- a/dist/chunks/lib-ddb42891.js
++++ b/dist/chunks/lib-ddb42891.js
+@@ -122,7 +122,10 @@ function startElectron(root, logger) {
+     ensureElectronEntryFile(root);
+     const electronPath = getElectronPath();
+     const inspect = !!process.env.VSCODE_INSPECTOR_OPTIONS;
+-    const ps = node_child_process.spawn(electronPath, ['.']);
++    const remoteDebugPort = process.env.REMOTE_DEBUG_PORT || 9223;
++    console.log(`(electron-vite patch) REMOTE_DEBUG_PORT=${remoteDebugPort}.`);
++    const ps = node_child_process.spawn(electronPath, ['.', `--remote-debugging-port=${remoteDebugPort}`],)
++
+     ps.stdout.on('data', chunk => {
+         !inspect && chunk.toString().trim() && logger.info(chunk.toString());
+     });

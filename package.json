@@ -1,42 +1,23 @@
 {
-  "name": "clay-host",
+  "name": "clay",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && npm run build:vite",
-    "build:vite": "vite build --outDir dist-prod",
-    "preview": "vite preview",
-    "gen-types": "tsc --declaration --strict  --pretty ./src/trpc/router.ts --out server.js --emitDeclarationOnly"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "@trpc/server": "^10.7.0",
-    "dexie": "^3.2.2",
-    "dexie-react-hooks": "^1.1.1",
-    "events": "^3.3.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "rxjs": "^7.8.0",
-    "superjson": "^1.12.1",
-    "webextension-polyfill": "^0.10.0",
-    "zod": "^3.20.2"
-  },
+  "keywords": [],
+  "author": "",
   "devDependencies": {
-    "@crxjs/vite-plugin": "^1.0.14",
-    "@types/chrome": "^0.0.208",
-    "@types/events": "^3.0.0",
-    "@types/node": "^18.11.18",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "@types/webextension-polyfill": "^0.10.0",
-    "@types/ws": "^8.5.4",
-    "@vitejs/plugin-react": "^1.3.0",
-    "prettier": "^2.8.1",
-    "typescript": "^4.6.3",
-    "vite": "^2.9.9"
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.11",
+    "prettier": "^2.7.1"
   },
   "pnpm": {
     "patchedDependencies": {
+      "electron-vite@1.0.18": "patches/electron-vite@1.0.18.patch",
       "rollup@2.79.1": "patches/rollup@2.79.1.patch"
     }
   }

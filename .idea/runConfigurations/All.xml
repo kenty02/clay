@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All" type="CompoundRunConfigurationType">
+    <toRun name="Host" type="CompoundRunConfigurationType" />
+    <toRun name="Viewer" type="CompoundRunConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

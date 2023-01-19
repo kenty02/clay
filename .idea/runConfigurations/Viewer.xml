@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Viewer" type="CompoundRunConfigurationType">
+    <toRun name="electron" type="ChromiumRemoteDebugType" />
+    <toRun name="dev viewer" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>

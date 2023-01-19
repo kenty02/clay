@@ -1,16 +1,15 @@
-# Clay Host
+# Clay
 
-## trpcクライアント向け型生成
+## 環境構築
+
+WebStormでリポジトリをクローン
 
 ```shell
-pnpm run gen-types
-mv server.d.ts /mnt/c/Users/kenty/dev/clay-viewer-electron/src/ # change dir name
+pnpm i
 ```
 
-## patchesに関して
+clay-relayをインストール
 
-Windowsで`pnpm dev`がうまく動作しないのでpnpmでrollupにパッチを当てている[参考](https://github.com/crxjs/chrome-extension-tools/issues/538)
+`All` configurationで両方のデバッグ開始
 
-なのでこれのバージョンが上がったらパッチも更新する必要がある
-
-`@crxjs/vite-plugin`の直接の依存関係である方の`rollup`のバージョンであることに注意(`pnpm why rollup`)
+- `chrome`アタッチ時にページ選択画面が出るので`Service Worker`を選ぶ（自動化したい）
