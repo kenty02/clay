@@ -29,7 +29,7 @@ job("Build Host Extension for Chromium-based browsers") {
                 cd packages/host
 
                 echo Building without type-checking and CWS key
-                npx vite build # TODO: use pnpm run build
+                pnpm build:vite # TODO: use pnpm build
 
                 echo Done, zipping and uploading
                 zip -r clay-host.zip dist-prod/

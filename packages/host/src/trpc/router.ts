@@ -1,13 +1,13 @@
-import { initTRPC } from '@trpc/server'
-import { observable } from '@trpc/server/observable'
-import { EventEmitter } from 'events' // todo npm remove events
-import { z } from 'zod'
+import {initTRPC} from '@trpc/server'
+import {observable} from '@trpc/server/observable'
+import {EventEmitter} from 'events' // todo npm remove events
+import {z} from 'zod'
 import browser from 'webextension-polyfill'
-import { FocusUpdate, NodeUpdate } from './types'
-import { Observable, Subject } from 'rxjs'
-import { db, INode } from '../db'
+import {FocusUpdate, NodeUpdate} from './types'
+import {Observable, Subject} from 'rxjs'
+import {db, INode} from '../db'
 import superjson from 'superjson'
-import { searchHistoryByUrl } from '../utils'
+import {searchHistoryByUrl} from '../utils'
 
 // create a global event emitter (could be replaced by redis, etc)
 const ee = new EventEmitter()
@@ -27,7 +27,7 @@ export const appRouter = t.router({
         emit.next(data)
       }
 
-      browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      browser.tabs.onUpdated.addListener((_tabId, changeInfo, _tab) => {
         emit.next(changeInfo.url ?? '')
       })
       // trigger `onAdd()` when `add` is triggered in our event emitter
@@ -162,7 +162,6 @@ export const focusUpdateSubject = new Subject<FocusUpdate>()
 
 const convertObservable = <T>(obs: Observable<T>) => {
   return observable<T>((emit) => {
-    const randomId = Math.random().toString(36).substring(7)
     const subscriber = obs.subscribe({
       next: (data) => {
         emit.next(data)
