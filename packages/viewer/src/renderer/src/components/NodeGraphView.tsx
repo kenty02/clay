@@ -38,6 +38,7 @@ function NodeGraphView(): JSX.Element {
           const node = nodes.length > 0 ? nodes[0] : null
           if (node == null) return
 
+          // @ts-ignore ForceGraphが渡したオブジェクトに代入する
           fgRef.current!.centerAt(node.x as number, node.y as number)
         }, 500)
       }
