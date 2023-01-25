@@ -1,13 +1,14 @@
 import browser from 'webextension-polyfill'
-import { db } from '../db'
-import { ensureId, log } from '../utils'
-import { handleUrlChanged, notifyFocusUpdate } from '../background'
+import {db} from '../db'
+import {ensureId} from '../utils'
+import {handleUrlChanged, notifyFocusUpdate} from '../background'
+import {log} from "../log";
 
 export const openedTabs = new Set<number>()
 export const handleTabEvents = () => {
   browser.tabs.onActivated.addListener((activeInfo) => {
     ;(async () => {
-      log(JSON.stringify({ type: 'tabs.onActivated', ...activeInfo }))
+      log(JSON.stringify({type: 'tabs.onActivated', ...activeInfo}))
       // FIXME: supports only single window
       const allActiveFocus = await db.focus.filter((f) => f.active).toArray()
       const focusAtThisTab = await db.focus.where('tabId').equals(activeInfo.tabId).first()
@@ -35,11 +36,6 @@ export const handleTabEvents = () => {
       log(JSON.stringify({ type: 'tabs.onUpdated', tabId, changeInfo, tab }))
       if (!tab.url) {
         throw new Error('tabs permission not granted?')
-      }
-
-      // ignore extension pages
-      if (tab.url.startsWith('chrome-extension://')) {
-        return
       }
 
       if (changeInfo.url) {

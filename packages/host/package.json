@@ -10,14 +10,13 @@
     "gen-types": "tsc --declaration --strict  --pretty ./src/trpc/router.ts --out server.js --emitDeclarationOnly"
   },
   "dependencies": {
-    "@trpc/server": "^10.7.0",
+    "@trpc/server": "^10.9.0",
     "dexie": "^3.2.2",
     "dexie-react-hooks": "^1.1.1",
-    "events": "^3.3.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "rxjs": "^7.8.0",
-    "superjson": "^1.12.1",
+    "superjson": "^1.12.2",
     "webextension-polyfill": "^0.10.0",
     "zod": "^3.20.2"
   },
@@ -26,12 +25,12 @@
     "@types/chrome": "^0.0.208",
     "@types/events": "^3.0.0",
     "@types/node": "^18.11.18",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
     "@types/webextension-polyfill": "^0.10.0",
     "@types/ws": "^8.5.4",
-    "@vitejs/plugin-react": "^1.3.0",
-    "typescript": "^4.6.3",
-    "vite": "^2.9.9"
+    "@vitejs/plugin-react": "^1.3.2",
+    "typescript": "^4.9.4",
+    "vite": "^2.9.15"
   }
 }

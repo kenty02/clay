@@ -5,8 +5,8 @@ import {createContext} from "./context";
 import type {IncomingMessage} from "http";
 import {EventEmitter} from "events";
 import browser from "webextension-polyfill";
-import {log} from "../utils";
 import {notifyUser} from "../background/utils";
+import {log} from "../log";
 
 // 事前条件
 // - クライアントは常に1度しか来ない（relay側でブロックするため)
@@ -96,7 +96,7 @@ const wss: WebSocketServer = {
         // todo close on createcontext error
     },
 };
-const handler = applyWSSHandler({wss, router: appRouter, createContext});
+applyWSSHandler({wss, router: appRouter, createContext});
 
 // ws.once("close... not implemented
 /*

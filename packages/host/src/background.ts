@@ -1,12 +1,13 @@
 import browser from 'webextension-polyfill'
-import { db, IFocus, INode, INodeWithoutPosition } from './db'
-import { checkFullArray, ensureId, log, searchHistoryByUrl } from './utils'
-import { handleTabEvents, openedTabs } from './handlers/tabs'
-import { handleHistoryEvents } from './handlers/history'
-import { handleCommands } from './handlers/commands'
-import { connectNativeRelay } from './trpc/wsServer'
-import { focusUpdateSubject, nodeUpdateSubject } from './trpc/router'
-import { enableDebug } from './debug'
+import {db, IFocus, INode, INodeWithoutPosition} from './db'
+import {checkFullArray, ensureId, searchHistoryByUrl} from './utils'
+import {handleTabEvents, openedTabs} from './handlers/tabs'
+import {handleHistoryEvents} from './handlers/history'
+import {handleCommands} from './handlers/commands'
+import {connectNativeRelay} from './trpc/wsServer'
+import {focusUpdateSubject, nodeUpdateSubject} from './trpc/router'
+import {enableDebug} from './debug'
+import {log} from "./log";
 
 connectNativeRelay()
 handleCommands()

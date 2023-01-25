@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill'
-import { log } from '../utils'
+import {log} from "../log";
 
 export const handleHistoryEvents = () => {
   browser.history.onVisited.addListener((r) => {

@@ -1,10 +1,10 @@
-import { Button, MantineProvider, Text } from '@mantine/core'
-import NodeTableView from './components/NodeTableView'
+import {Button, MantineProvider, Text} from '@mantine/core'
 import TrpcProvider from './providers/TrpcProvider'
-import { Suspense } from 'react'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { NotificationsProvider } from '@mantine/notifications'
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary'
+import {Suspense} from 'react'
+import {ReactQueryDevtools} from '@tanstack/react-query-devtools'
+import {NotificationsProvider} from '@mantine/notifications'
+import {ErrorBoundary, FallbackProps} from 'react-error-boundary'
+import NodeGraphView from "./components/NodeGraphView";
 
 function App(): JSX.Element {
   return (
@@ -12,7 +12,6 @@ function App(): JSX.Element {
       <NotificationsProvider position={'top-right'}>
         <Suspense fallback={<Text>Loading...</Text>}>
           <TrpcProvider>
-            <Text>Welcome to Mantine</Text>
             <Button
               onClick={(): void => {
                 location.reload()
@@ -27,10 +26,10 @@ function App(): JSX.Element {
               }}
             >
               <Suspense fallback={<Text>Loading...</Text>}>
-                <NodeTableView />
+                <NodeGraphView/>
               </Suspense>
             </ErrorBoundary>
-            <ReactQueryDevtools initialIsOpen={false} />
+            <ReactQueryDevtools panelPosition={"top"}/>
           </TrpcProvider>
         </Suspense>
       </NotificationsProvider>
@@ -38,7 +37,7 @@ function App(): JSX.Element {
   )
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: FallbackProps): JSX.Element {
+function ErrorFallback({error, resetErrorBoundary}: FallbackProps): JSX.Element {
   return (
     <div role="alert">
       <p>Something went wrong:</p>

@@ -1,6 +1,5 @@
 import {initTRPC} from '@trpc/server'
 import {observable} from '@trpc/server/observable'
-import {EventEmitter} from 'events' // todo npm remove events
 import {z} from 'zod'
 import browser from 'webextension-polyfill'
 import {FocusUpdate, NodeUpdate} from './types'
@@ -9,49 +8,15 @@ import {db, INode} from '../db'
 import superjson from 'superjson'
 import {searchHistoryByUrl} from '../utils'
 
-// create a global event emitter (could be replaced by redis, etc)
-const ee = new EventEmitter()
-
 const t = initTRPC.create({ isServer: false, allowOutsideOfServer: true, transformer: superjson })
 
 export type AppRouter = typeof appRouter
 export const appRouter = t.router({
-  onAdd: t.procedure.subscription(() => {
-    // `resolve()` is triggered for each client when they start subscribing `onAdd`
-
-    // return an `observable` with a callback which is triggered immediately
-
-    return observable<string>((emit) => {
-      const onAdd = (data: string) => {
-        // emit data to client
-        emit.next(data)
-      }
-
-      browser.tabs.onUpdated.addListener((_tabId, changeInfo, _tab) => {
-        emit.next(changeInfo.url ?? '')
-      })
-      // trigger `onAdd()` when `add` is triggered in our event emitter
-      ee.on('add', onAdd)
-
-      // unsubscribe function when client disconnects or stops subscribing
-      return () => {
-        ee.off('add', onAdd)
-      }
+  debug: t.router({
+    onLog: t.procedure.subscription(() => {
+      return convertObservable(debugLogSubject)
     })
   }),
-  add: t.procedure
-    .input(
-      z.object({
-        id: z.string().uuid().optional(),
-        text: z.string().min(1)
-      })
-    )
-    .mutation(async ({ input }) => {
-      const post = { ...input } /* [..] add to db */
-
-      ee.emit('add', post)
-      return post
-    }),
   hello: t.procedure.input(z.string()).query((req) => {
     return `hello ${req.input}`
   }),
@@ -59,8 +24,8 @@ export const appRouter = t.router({
     onUpdate: t.procedure.subscription(() => {
       return convertObservable(nodeUpdateSubject)
     }),
-    get: t.procedure.input(z.object({ nodeId: z.number() })).query(async ({ input }) => {
-      const { nodeId } = input
+    get: t.procedure.input(z.object({nodeId: z.number()})).query(async ({input}) => {
+      const {nodeId} = input
       const nodes = await db.node.filter((node) => node.id === nodeId).toArray()
       const nodeTitles: Record<number, string> = {}
       await Promise.all(
@@ -97,10 +62,10 @@ export const appRouter = t.router({
         .filter((node) => activeFocusNodeIds.includes(node.id!))
         .toArray()
 
-      const res: INode[] = []
+      const res: number[] = []
       const getSelfAndRelatives = async (node: INode) => {
-        if (res.findIndex((n) => n.id === node.id) !== -1) return
-        res.push(node)
+        if (res.findIndex((n) => n === node.id) !== -1) return
+        res.push(node.id!)
         const children = await db.node.where('parentId').equals(node.id!).toArray()
         const parents =
           node.parentId != null ? await db.node.where('id').equals(node.parentId).toArray() : []
@@ -144,19 +109,19 @@ export const appRouter = t.router({
           }
       )
     }),
-    select: t.procedure.input(z.number()).mutation(async ({ input }) => {
-      const focusId = input
+    select: t.procedure.input(z.number()).mutation(async ({input: focusId}) => {
       const focus = await db.focus.get(focusId)
       if (!focus) {
         throw new Error('focus not found')
       }
 
       // activate browser tab
-      await browser.tabs.update(focus.tabId, { active: true })
+      await browser.tabs.update(focus.tabId, {active: true})
     })
   })
 })
 
+export const debugLogSubject = new Subject<unknown>()
 export const nodeUpdateSubject = new Subject<NodeUpdate>()
 export const focusUpdateSubject = new Subject<FocusUpdate>()
 
