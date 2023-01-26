@@ -41,13 +41,12 @@ job("Build Host Extension for Chromium-based browsers") {
     }
   }
 }
+// viewer depends on host trpc router type
 job("Build Viewer for windows") {
   startOn {
     gitPush {
       pathFilter {
         +"**"
-        -"packages/**"
-        +"packages/viewer/**"
         -"**/README.md"
       }
     }
