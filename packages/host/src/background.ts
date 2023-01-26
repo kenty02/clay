@@ -1,13 +1,14 @@
 import browser from 'webextension-polyfill'
-import {db, IFocus, INode, INodeWithoutPosition} from './db'
-import {checkFullArray, ensureId, searchHistoryByUrl} from './utils'
-import {handleTabEvents, openedTabs} from './handlers/tabs'
-import {handleHistoryEvents} from './handlers/history'
-import {handleCommands} from './handlers/commands'
-import {connectNativeRelay} from './trpc/wsServer'
-import {focusUpdateSubject, nodeUpdateSubject} from './trpc/router'
-import {enableDebug} from './debug'
-import {log} from "./log";
+import { db, IFocus, INode, INodeWithoutPosition } from './db'
+import { checkFullArray, ensureId, searchHistoryByUrl } from './utils'
+import { handleTabEvents, openedTabs } from './handlers/tabs'
+import { handleHistoryEvents } from './handlers/history'
+import { handleCommands } from './handlers/commands'
+import { connectNativeRelay } from './trpc/wsServer'
+import { focusUpdateSubject, nodeUpdateSubject } from './trpc/router'
+import { enableDebug } from './debug'
+import { log } from './log'
+import { handleWebNavigationEvents } from './handlers/webNavigation'
 
 connectNativeRelay()
 handleCommands()
@@ -17,11 +18,12 @@ const newlyOpenedTabsAndOpener = new Map<number, number>()
 
 handleTabEvents()
 handleHistoryEvents()
+handleWebNavigationEvents()
 
-const syncAllFocus = async () => {
+const syncAllFocus = async (): Promise<void> => {
   const activeFocus = await db.focus.toArray()
-  for (let f of activeFocus) {
-    let { active, id, nodeId, tabId } = f
+  for (const f of activeFocus) {
+    const { id, tabId } = f
     const tab = await browser.tabs.get(tabId).catch(() => null)
     if (tab == null) {
       log(`syncAllFocus: tab ${tabId} of focus ${id} not found, remove focus`)
@@ -36,7 +38,7 @@ interface ExtendedVisitItem extends browser.History.VisitItem {
   url: string
 }
 
-export const notifyNodeUpdate = async (node: INode) => {
+export const notifyNodeUpdate = async (node: INode): Promise<void> => {
   const title = (await searchHistoryByUrl(node.url))[0]?.title
   nodeUpdateSubject.next({
     id: node.id!,
@@ -47,7 +49,7 @@ export const notifyNodeUpdate = async (node: INode) => {
   })
 }
 
-export const notifyFocusUpdate = (focus: IFocus) => {
+export const notifyFocusUpdate = (focus: IFocus): void => {
   focusUpdateSubject.next({
     id: focus.id!,
     nodeId: focus.nodeId,
@@ -60,11 +62,15 @@ export const notifyFocusUpdate = (focus: IFocus) => {
 export const handleUrlChanged = async (
   // data: browser.WebNavigation.OnCommittedDetailsType
   data: { url: string; tabId: number; openerTabId?: number }
-) => {
+): Promise<void> => {
   // URLが遷移した
   log('handleUrlChanged, New/MoveTo ' + data.url)
 
-  const computeTransitionInfo = async () => {
+  const computeTransitionInfo = async (): Promise<{
+    isNewTab: boolean
+    openerFocus?: IFocus
+    tabId: number
+  }> => {
     // 対象タブID
     const thisTabId = data.tabId
     // URLが新しいタブで開かれたか？
@@ -95,7 +101,7 @@ export const handleUrlChanged = async (
     }
     return {
       isNewTab: isNewTab,
-      openerFocus: shouldCreateNewTree ? null : openerTabFocus,
+      openerFocus: shouldCreateNewTree ? undefined : openerTabFocus,
       tabId: thisTabId
     }
   }
@@ -193,7 +199,7 @@ export const handleUrlChanged = async (
       if (transition.isNewTab) {
         // 「新しいタブで開く」
         const newFocus: IFocus = {
-          nodeId: newNode.id,
+          nodeId: newNode.id!,
           tabId: transition.tabId,
           active: false
         }
@@ -204,7 +210,7 @@ export const handleUrlChanged = async (
         await db.focus.update(transition.openerFocus, {
           nodeId: newNode.id
         })
-        notifyFocusUpdate({ ...transition.openerFocus, nodeId: newNode.id })
+        notifyFocusUpdate({ ...transition.openerFocus, nodeId: newNode.id! })
       }
     }
   }
@@ -214,7 +220,7 @@ const createNode = async (
   nodeData: INodeWithoutPosition,
   parentNode: INode,
   parentNodeChildren: INode[]
-) => {
+): Promise<INode> => {
   // get new node position
   const targetPosAbs = {
     col: 0,
