@@ -1,21 +1,21 @@
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
-import {PropsWithChildren} from 'react'
-import {trpc} from '../utils/trpc'
-import {createWSClient, wsLink} from '@trpc/client'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { PropsWithChildren } from 'react'
+import { trpc } from '../utils/trpc'
+import { createWSClient, wsLink } from '@trpc/client'
 import superjson from 'superjson'
-import {showNotification} from '@mantine/notifications'
+import { showNotification } from '@mantine/notifications'
 
 // strict modeで2回呼ばれるのを防ぐためにここで呼ぶ
 const wsClient = createWSClient({
   url: `ws://localhost:3003/ws`,
   onOpen: () => {
     if (import.meta.env.DEV) {
-      showNotification({message: 'ws opened'})
+      showNotification({ message: 'ws opened' })
     }
   },
   onClose: () => {
     if (import.meta.env.DEV) {
-      showNotification({message: 'ws closed'})
+      showNotification({ message: 'ws closed' })
     }
   }
 })
@@ -33,19 +33,23 @@ const trpcClient = trpc.createClient({
   ],
   transformer: superjson
 })
-const queryClient = new QueryClient({defaultOptions: {queries: {suspense: true}}})
+const queryClient = new QueryClient({ defaultOptions: { queries: { suspense: true } } })
 
-function TrpcProvider({children}: PropsWithChildren): JSX.Element {
+function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      <DebugLogNullSubscriber/>
+      <DebugLogSubscriber />
     </trpc.Provider>
   )
 }
 
-function DebugLogNullSubscriber() {
-  trpc.debug.onLog.useSubscription()
+function DebugLogSubscriber(): null {
+  trpc.debug.onLog.useSubscription(undefined, {
+    onData: (log) => {
+      window.electron.ipcRenderer.invoke('writeLogEntry', log)
+    }
+  })
   return null
 }
 

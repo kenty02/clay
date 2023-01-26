@@ -1,6 +1,7 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
 import * as path from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import * as fs from 'fs'
 
 function createWindow(): void {
   // Create the browser window.
@@ -18,6 +19,21 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false
     }
+  })
+
+  // open log file
+  const logFile = path.join(app.getPath('logs'), 'clay.log')
+  console.log('logFile is ', logFile)
+  if (!fs.existsSync(logFile)) {
+    fs.writeFileSync(logFile, '', { encoding: 'utf-8' })
+  }
+  ipcMain.handle('writeLogEntry', (_event, arg) => {
+    const now = Date.now()
+    const newLog = JSON.stringify({ time: now, data: arg }) + '\n'
+    fs.appendFileSync(logFile, newLog, { encoding: 'utf-8' })
+  })
+  ipcMain.handle('clearLogFile', () => {
+    fs.writeFileSync(logFile, '', { encoding: 'utf-8' })
   })
 
   mainWindow.on('ready-to-show', () => {
