@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "typecheck": "tsc",
     "dev": "vite",
     "build": "tsc && npm run build:vite",
     "build:vite": "vite build --outDir dist-prod",
