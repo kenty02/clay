@@ -7,7 +7,6 @@ import { connectNativeRelay } from './trpc/wsServer'
 import { focusUpdateSubject, nodeUpdateSubject } from './trpc/router'
 import { enableDebug } from './debug'
 import { log } from './log'
-import { handleWebNavigationEvents } from './handlers/webNavigation'
 
 if (import.meta.env.DEV) enableDebug()
 connectNativeRelay()
@@ -18,7 +17,6 @@ const newlyOpenedTabsAndOpener = new Map<number, number>()
 // key = tabId
 
 handleTabEvents()
-handleWebNavigationEvents()
 
 const syncAllFocus = async (): Promise<void> => {
   const activeFocus = await db.focus.toArray()
