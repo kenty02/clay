@@ -8,7 +8,6 @@ import type { IncomingMessage } from 'http'
 import { EventEmitter } from 'events'
 import browser from 'webextension-polyfill'
 import { notifyUser } from '../background/utils'
-import { log } from '../log'
 
 // 事前条件
 // - クライアントは常に1度しか来ない（relay側でブロックするため)

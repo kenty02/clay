@@ -8,7 +8,6 @@ export const openedTabs = new Set<number>()
 export const handleTabEvents = (): void => {
   browser.tabs.onActivated.addListener((activeInfo) => {
     ;(async (): Promise<void> => {
-      log({ type: 'tabs.onActivated', ...activeInfo })
       // FIXME: supports only single window
       const allActiveFocus = await db.focus.filter((f) => f.active).toArray()
       const focusAtThisTab = await db.focus.where('tabId').equals(activeInfo.tabId).first()
@@ -33,7 +32,6 @@ export const handleTabEvents = (): void => {
   // 特に、タブを複製した場合onCommitedは呼ばれずこっちのみが呼ばれる
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     ;(async (): Promise<void> => {
-      log({ type: 'tabs.onUpdated', tabId, changeInfo, tab })
       if (!tab.url) {
         throw new Error('tabs permission not granted?')
       }
@@ -64,7 +62,6 @@ export const handleTabEvents = (): void => {
       // if (openedTabs.has(tabId)) return;
       // openedTabs.add(tabId);
       // 新規タブが作成された
-      log(`tabs.onUpdated: ${tabId}`)
     })().catch(console.error)
   })
 

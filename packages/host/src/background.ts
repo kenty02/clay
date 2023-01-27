@@ -2,7 +2,6 @@ import browser from 'webextension-polyfill'
 import { db, IFocus, INode, INodeWithoutPosition } from './db'
 import { checkFullArray, ensureId, searchHistoryByUrl } from './utils'
 import { handleTabEvents, openedTabs } from './handlers/tabs'
-import { handleHistoryEvents } from './handlers/history'
 import { handleCommands } from './handlers/commands'
 import { connectNativeRelay } from './trpc/wsServer'
 import { focusUpdateSubject, nodeUpdateSubject } from './trpc/router'
@@ -10,14 +9,15 @@ import { enableDebug } from './debug'
 import { log } from './log'
 import { handleWebNavigationEvents } from './handlers/webNavigation'
 
+if (import.meta.env.DEV) enableDebug()
 connectNativeRelay()
+
 handleCommands()
 
 const newlyOpenedTabsAndOpener = new Map<number, number>()
 // key = tabId
 
 handleTabEvents()
-handleHistoryEvents()
 handleWebNavigationEvents()
 
 const syncAllFocus = async (): Promise<void> => {
@@ -281,5 +281,3 @@ const createNode = async (
   })
   return { id: newNodeId, ...newNode }
 }
-
-if (import.meta.env.DEV) enableDebug()
