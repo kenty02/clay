@@ -26,3 +26,6 @@ dist-ssr
 dist-prod
 
 *user-data
+/test-results/
+/playwright-report/
+/playwright/.cache/

@@ -33,18 +33,24 @@ importers:
   packages/host:
     specifiers:
       '@crxjs/vite-plugin': ^1.0.14
+      '@playwright/test': ^1.30.0
+      '@trpc/client': ^10.9.0
       '@trpc/server': ^10.9.0
       '@types/chrome': ^0.0.208
+      '@types/detect-port': ^1.3.2
       '@types/events': ^3.0.0
+      '@types/json-stable-stringify': ^1.0.34
       '@types/node': ^18.11.18
       '@types/react': ^18.0.27
       '@types/react-dom': ^18.0.10
       '@types/webextension-polyfill': ^0.10.0
       '@types/ws': ^8.5.4
       '@vitejs/plugin-react': ^1.3.2
+      detect-port: ^1.5.1
       dexie: ^3.2.2
       dexie-react-hooks: ^1.1.1
       events: ^3.3.0
+      json-stable-stringify: ^1.0.2
       react: ^18.2.0
       react-dom: ^18.2.0
       rxjs: ^7.8.0
@@ -52,8 +58,10 @@ importers:
       typescript: ^4.9.4
       vite: ^2.9.15
       webextension-polyfill: ^0.10.0
+      ws: ^8.12.0
       zod: ^3.20.2
     dependencies:
+      '@trpc/client': 10.9.0_@trpc+server@10.9.0
       '@trpc/server': 10.9.0
       dexie: 3.2.2
       dexie-react-hooks: 1.1.1_maaen3eylt6x5je33l3436tvoy
@@ -66,16 +74,22 @@ importers:
       zod: 3.20.2
     devDependencies:
       '@crxjs/vite-plugin': 1.0.14_vite@2.9.15
+      '@playwright/test': 1.30.0
       '@types/chrome': 0.0.208
+      '@types/detect-port': 1.3.2
       '@types/events': 3.0.0
+      '@types/json-stable-stringify': 1.0.34
       '@types/node': 18.11.18
       '@types/react': 18.0.27
       '@types/react-dom': 18.0.10
       '@types/webextension-polyfill': 0.10.0
       '@types/ws': 8.5.4
       '@vitejs/plugin-react': 1.3.2
+      detect-port: 1.5.1
+      json-stable-stringify: 1.0.2
       typescript: 4.9.4
       vite: 2.9.15
+      ws: 8.12.0
 
   packages/viewer:
     specifiers:
@@ -1159,6 +1173,15 @@ packages:
       fastq: 1.15.0
     dev: true
 
+  /@playwright/test/1.30.0:
+    resolution: { integrity: sha512-SVxkQw1xvn/Wk/EvBnqWIq6NLo1AppwbYOjNLmyU0R1RoQ3rLEBtmjTnElcnz8VEtn11fptj1ECxK0tgURhajw== }
+    engines: { node: '>=14' }
+    hasBin: true
+    dependencies:
+      '@types/node': 18.11.18
+      playwright-core: 1.30.0
+    dev: true
+
   /@radix-ui/number/1.0.0:
     resolution: { integrity: sha512-Ofwh/1HX69ZfJRiRBMTy7rgjAzHmwe4kW9C9Y99HTRUcYLUuVT0KESFj15rPjRgKJs20GPq8Bm5aEDJ8DuA3vA== }
     dependencies:
@@ -1404,10 +1427,14 @@ packages:
       '@types/ms': 0.7.31
     dev: true
 
+  /@types/detect-port/1.3.2:
+    resolution: { integrity: sha512-xxgAGA2SAU4111QefXPSp5eGbDm/hW6zhvYl9IeEPZEry9F4d66QAHm5qpUXjb6IsevZV/7emAEx5MhP6O192g== }
+    dev: true
+
   /@types/electron-prompt/1.6.1:
     resolution: { integrity: sha512-kTvEfI2sVyrgsoN5yN7Ak++5GP4sQ9FbLW090NZ9aysXg/6JAhOygZqpjHfeu1OCkXtEWsgyesW2j+Qg1rbncA== }
     dependencies:
-      electron: 22.0.3
+      electron: 22.1.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1451,6 +1478,10 @@ packages:
 
   /@types/json-schema/7.0.11:
     resolution: { integrity: sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ== }
+    dev: true
+
+  /@types/json-stable-stringify/1.0.34:
+    resolution: { integrity: sha512-s2cfwagOQAS8o06TcwKfr9Wx11dNGbH2E9vJz1cqV+a/LOyhWNLUNd6JSRYNzvB4d29UuJX2M0Dj9vE1T8fRXw== }
     dev: true
 
   /@types/keyv/3.1.4:
@@ -1775,6 +1806,11 @@ packages:
     resolution: { integrity: sha512-7zFpHzhnqYKrkYdUjF1HI1bzd0VygEGX8lFk4k5zVMqHEoES+P+7TKI+EvLO9WVMJ8eekdO0aDEK044xTXwPPA== }
     engines: { node: '>=0.4.0' }
     hasBin: true
+    dev: true
+
+  /address/1.2.2:
+    resolution: { integrity: sha512-4B/qKCfeE/ODUaAUpSwfzazo5x29WD4r3vXiWsB7I2mSDAihwEqKO+g8GELZUQSSAo5e1XTYh3ZVfLyxBc12nA== }
+    engines: { node: '>= 10.0.0' }
     dev: true
 
   /aframe-extras/6.1.1_aframe@1.4.1:
@@ -2682,6 +2718,16 @@ packages:
     resolution: { integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g== }
     optional: true
 
+  /detect-port/1.5.1:
+    resolution: { integrity: sha512-aBzdj76lueB6uUst5iAs7+0H/oOjqI5D16XUWxlWMIMROhcM0rfsNVk93zTngq1dDNpoXRr++Sus7ETAExppAQ== }
+    hasBin: true
+    dependencies:
+      address: 1.2.2
+      debug: 4.3.4
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
   /dexie-react-hooks/1.1.1_maaen3eylt6x5je33l3436tvoy:
     resolution: { integrity: sha512-Cam5JP6PxHN564RvWEoe8cqLhosW0O4CAZ9XEVYeGHJBa6KEJlOpd9CUpV3kmU9dm2MrW97/lk7qkf1xpij7gA== }
     peerDependencies:
@@ -2935,8 +2981,8 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /electron/22.0.3:
-    resolution: { integrity: sha512-eETrJTINTzlXgQrnJSrKiF2Xdt5EHpxZ6Kk+WUjFCE0zUztdVm+hrngUecqhj8TPFlYScTANzPwRwUIjOChl+g== }
+  /electron/22.1.0:
+    resolution: { integrity: sha512-wz5s4N6V7zyKm4YQmXJImFoxO1Doai32ShYm0FzOLPBMwLMdQBV+REY+j1opRx0KJ9xJEIdjYgcA8OSw6vx3pA== }
     engines: { node: '>= 12.20.55' }
     hasBin: true
     requiresBuild: true
@@ -4482,6 +4528,12 @@ packages:
     resolution: { integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw== }
     dev: true
 
+  /json-stable-stringify/1.0.2:
+    resolution: { integrity: sha512-eunSSaEnxV12z+Z73y/j5N37/In40GK4GmsSy+tEHJMxknvqnA7/djeYtAgW0GsWHUfg+847WJjKaEylk2y09g== }
+    dependencies:
+      jsonify: 0.0.1
+    dev: true
+
   /json-stringify-safe/5.0.1:
     resolution: { integrity: sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA== }
     optional: true
@@ -4503,6 +4555,10 @@ packages:
       universalify: 2.0.0
     optionalDependencies:
       graceful-fs: 4.2.10
+
+  /jsonify/0.0.1:
+    resolution: { integrity: sha512-2/Ki0GcmuqSrgFyelQq9M05y7PS0mEwuIzrf3f1fPqkVDVRvZrPZtVSMHxdgo8Aq0sxAOb/cr2aqqA3LeWHVPg== }
+    dev: true
 
   /jsx-ast-utils/3.3.3:
     resolution: { integrity: sha512-fYQHZTZ8jSfmWZ0iyzfwiU4WDX4HpHbMCZ3gPlWYiCl3BoeOTsqKBqnTVfH2rYT7eP5c3sVbeSPHnnJOaTrWiw== }
@@ -5055,6 +5111,12 @@ packages:
     resolution: { integrity: sha512-C3FsVNH1udSEX48gGX1xfvwTWfsYWj5U+8/uK15BGzIGrKoUpghX8hWZwa/OFnakBiiVNmBvemTJR5mcy7iPcg== }
     engines: { node: '>=4' }
     optional: true
+
+  /playwright-core/1.30.0:
+    resolution: { integrity: sha512-7AnRmTCf+GVYhHbLJsGUtskWTE33SwMZkybJ0v6rqR1boxq2x36U7p1vDRV7HO2IwTZgmycracLxPEJI49wu4g== }
+    engines: { node: '>=14' }
+    hasBin: true
+    dev: true
 
   /plist/3.0.6:
     resolution: { integrity: sha512-WiIVYyrp8TD4w8yCvyeIr+lkmrGRd5u0VbRnU+tP/aRLxP/YadJUYOMZJ/6hIa3oUyVCsycXvtNRgd5XBJIbiA== }
@@ -6098,6 +6160,19 @@ packages:
 
   /wrappy/1.0.2:
     resolution: { integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ== }
+
+  /ws/8.12.0:
+    resolution: { integrity: sha512-kU62emKIdKVeEIOIKVegvqpXMSTAMLJozpHZaJNDYqBjzlSYXQGviYwN1osDLJ9av68qHd4a2oSjd7yD4pacig== }
+    engines: { node: '>=10.0.0' }
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+    dev: true
 
   /xhr-request/1.1.0:
     resolution: { integrity: sha512-Y7qzEaR3FDtL3fP30k9wO/e+FBnBByZeybKOhASsGP30NIkRAAkKD/sCnLvgEfAIEC1rcmK7YG8f4oEnIrrWzA== }

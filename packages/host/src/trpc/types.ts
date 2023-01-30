@@ -1,14 +1,10 @@
-export interface NodeUpdate {
-    id: number,
-    url: string,
-    parentId?: number,
-    childrenIds: number[],
-    title: string,
+import { IFocus, INode } from '../db'
+
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
+export type WithId<T extends { id?: unknown }> = WithRequired<T, 'id'>
+
+export interface NodeUpdate extends WithId<Partial<INode>> {
+  title?: string
 }
 
-export interface FocusUpdate {
-    id: number,
-    nodeId: number,
-    tabId: number,
-    active: boolean,
-}
+export type FocusUpdate = WithId<Partial<IFocus>>

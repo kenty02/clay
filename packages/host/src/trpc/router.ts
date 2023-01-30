@@ -1,12 +1,12 @@
-import {initTRPC} from '@trpc/server'
-import {observable} from '@trpc/server/observable'
-import {z} from 'zod'
+import { initTRPC } from '@trpc/server'
+import { observable } from '@trpc/server/observable'
+import { z } from 'zod'
 import browser from 'webextension-polyfill'
-import {FocusUpdate, NodeUpdate} from './types'
-import {Observable, Subject} from 'rxjs'
-import {db, INode} from '../db'
+import { FocusUpdate, NodeUpdate } from './types'
+import { Observable, Subject } from 'rxjs'
+import { db, INode } from '../db'
 import superjson from 'superjson'
-import {searchHistoryByUrl} from '../utils'
+import { searchHistoryByUrl } from '../utils'
 
 const t = initTRPC.create({ isServer: false, allowOutsideOfServer: true, transformer: superjson })
 
@@ -24,8 +24,8 @@ export const appRouter = t.router({
     onUpdate: t.procedure.subscription(() => {
       return convertObservable(nodeUpdateSubject)
     }),
-    get: t.procedure.input(z.object({nodeId: z.number()})).query(async ({input}) => {
-      const {nodeId} = input
+    get: t.procedure.input(z.object({ nodeId: z.number() })).query(async ({ input }) => {
+      const { nodeId } = input
       const nodes = await db.node.filter((node) => node.id === nodeId).toArray()
       const nodeTitles: Record<number, string> = {}
       await Promise.all(
@@ -56,13 +56,14 @@ export const appRouter = t.router({
     }),
     getAllFocusedAndItsRelatives: t.procedure.query(async () => {
       // assuming all focus.active is true
-      const activeFocus = await db.focus.filter((focus) => focus.active).toArray()
-      const activeFocusNodeIds = activeFocus.map((focus) => focus.nodeId)
-      const activeFocusNodes = await db.node
-        .filter((node) => activeFocusNodeIds.includes(node.id!))
+      const allFocus = await db.focus.toArray()
+      const allFocusedNodeIds = allFocus.map((focus) => focus.nodeId)
+      const allFocusedNodes = await db.node
+        .filter((node) => allFocusedNodeIds.includes(node.id!))
         .toArray()
 
       const res: number[] = []
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       const getSelfAndRelatives = async (node: INode) => {
         if (res.findIndex((n) => n === node.id) !== -1) return
         res.push(node.id!)
@@ -74,7 +75,7 @@ export const appRouter = t.router({
           ...parents.map(getSelfAndRelatives)
         ])
       }
-      await Promise.all(activeFocusNodes.map(getSelfAndRelatives))
+      await Promise.all(allFocusedNodes.map(getSelfAndRelatives))
       return res
     })
   }),
@@ -92,9 +93,16 @@ export const appRouter = t.router({
         (focus) =>
           <FocusUpdate>{
             id: focus.id!,
-            nodeId: focus.nodeId,
-            tabId: focus.tabId,
-            active: focus.active
+            ...focus
+          }
+      )
+    }),
+    getAll: t.procedure.query(async () => {
+      return (await db.focus.toArray()).map(
+        (focus) =>
+          <FocusUpdate>{
+            id: focus.id!,
+            ...focus
           }
       )
     }),
@@ -103,20 +111,18 @@ export const appRouter = t.router({
         (focus) =>
           <FocusUpdate>{
             id: focus.id!,
-            nodeId: focus.nodeId,
-            tabId: focus.tabId,
-            active: focus.active
+            ...focus
           }
       )
     }),
-    select: t.procedure.input(z.number()).mutation(async ({input: focusId}) => {
+    select: t.procedure.input(z.number()).mutation(async ({ input: focusId }) => {
       const focus = await db.focus.get(focusId)
       if (!focus) {
         throw new Error('focus not found')
       }
 
       // activate browser tab
-      await browser.tabs.update(focus.tabId, {active: true})
+      await browser.tabs.update(focus.tabId, { active: true })
     })
   })
 })
@@ -125,6 +131,7 @@ export const debugLogSubject = new Subject<unknown>()
 export const nodeUpdateSubject = new Subject<NodeUpdate>()
 export const focusUpdateSubject = new Subject<FocusUpdate>()
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const convertObservable = <T>(obs: Observable<T>) => {
   return observable<T>((emit) => {
     const subscriber = obs.subscribe({
@@ -138,6 +145,7 @@ const convertObservable = <T>(obs: Observable<T>) => {
         emit.complete()
       }
     })
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     return () => {
       subscriber.unsubscribe()
     }

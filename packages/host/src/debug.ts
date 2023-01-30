@@ -1,6 +1,9 @@
 import { focusUpdateSubject, nodeUpdateSubject } from './trpc/router'
 import browser from 'webextension-polyfill'
-import { log } from './log'
+import { log, logError } from './log'
+import { filter, firstValueFrom, map, tap } from 'rxjs'
+import { runtime } from './handlers/rxjs'
+import { z } from 'zod'
 
 export const enableDebug = (): void => {
   nodeUpdateSubject.subscribe((nodeUpdate) => {
@@ -27,4 +30,31 @@ export const enableDebug = (): void => {
   browser.webNavigation.onBeforeNavigate.addListener((r) =>
     log({ type: 'webNavigation.onBeforeNavigate', ...r })
   )
+}
+
+export const testOptionsSchema = z.object({
+  type: z.literal('testOptions'),
+  relayPort: z.number()
+})
+export type TestOptions = z.infer<typeof testOptionsSchema>
+const notNull = <T>(value: T | undefined): value is T => value !== undefined
+export const getTestOptions = async (): Promise<TestOptions> => {
+  return await firstValueFrom(
+    runtime.messageExternalStream.pipe(
+      map(([message]) => testOptionsSchema.safeParse(message)),
+      tap(
+        (result) =>
+          !result.success &&
+          logError({ message: 'expected testOption but got error', error: result.error })
+      ),
+      map((result) => (result.success ? result.data : undefined)),
+      filter(notNull)
+    )
+  )
+}
+
+export const playWrightReady = (): void => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    void chrome.tabs.remove(tabs[0].id!)
+  })
 }

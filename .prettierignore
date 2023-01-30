@@ -6,3 +6,5 @@ tsconfig.json
 tsconfig.*.json
 
 server.d.ts
+
+**/*-snapshots/**/*.json

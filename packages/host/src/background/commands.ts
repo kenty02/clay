@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill'
-import { notifyUser } from '../background/utils'
+import { notifyUser } from './utils'
 
-export const handleCommands = (): void => {
+export const registerCommandHandlers = (): void => {
   const { commands } = browser.runtime.getManifest()
   if (!commands) {
     throw new Error('invalid manifest')
