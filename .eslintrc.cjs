@@ -21,7 +21,8 @@ module.exports = {
     'plugin:react/jsx-runtime',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/eslint-recommended',
-    'plugin:prettier/recommended'
+    'plugin:prettier/recommended',
+    'plugin:playwright/playwright-test'
   ],
   rules: {
     '@typescript-eslint/ban-ts-comment': ['error', { 'ts-ignore': 'allow-with-description' }],
