@@ -13,7 +13,7 @@ import { TestOptions } from '../src/debug'
 const isVite = true
 export const test = base.extend<{
   _disableSnapshotPlatformSuffix: void
-  relayPort: number
+  relayInfo: { port?: number }
   context: BrowserContext
   extensionId: string
   client: ReturnType<typeof createTRPCProxyClient<AppRouter>>
@@ -30,12 +30,10 @@ export const test = base.extend<{
     { auto: true }
   ],
   // eslint-disable-next-line no-empty-pattern
-  relayPort: async ({}, use): Promise<void> => {
-    const relayPort = await detect_port(4000)
-    console.log('using port ' + relayPort)
-    await use(relayPort)
+  relayInfo: async ({}, use) => {
+    await use({ port: undefined })
   },
-  context: async ({ browserName, relayPort }, use) => {
+  context: async ({ browserName, relayInfo }, use) => {
     if (browserName !== 'chromium') {
       throw new Error('only chromium is supported for now')
     }
@@ -49,22 +47,23 @@ export const test = base.extend<{
     })
 
     if (isVite) {
-      const page = await context.newPage()
+      const [defaultPage] = context.pages()
 
       let [background] = context.serviceWorkers()
       if (!background) background = await context.waitForEvent('serviceworker')
       const extensionId = background.url().split('/')[2]
       const testOptions: TestOptions = {
         type: 'testOptions',
-        relayPort
+        relayPort: 9999
       }
-      await page.evaluate(
-        `chrome.runtime.sendMessage('${extensionId}', ${JSON.stringify(testOptions)})`
+      const testOptionsResponse = await defaultPage.evaluate(
+        `new Promise((resolve) => {chrome.runtime.sendMessage('${extensionId}', ${JSON.stringify(
+          testOptions
+        )},undefined, resolve)})`
       )
-
-      // wait for playWriteReady() to close this as a ready signal
-      // todo fix this takes ~1.9s
-      await page.waitForEvent('close')
+      console.log(testOptionsResponse)
+      const { port } = testOptionsResponse as { port: number }
+      relayInfo.port = port
     }
 
     await use(context)
@@ -93,9 +92,9 @@ export const test = base.extend<{
   },
   client: [
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async ({ context, relayPort }, use, testInfo): Promise<void> => {
+    async ({ context, relayInfo }, use, testInfo): Promise<void> => {
       const wsClient = createWSClient({
-        url: `ws://localhost:${relayPort}/ws`,
+        url: `ws://localhost:${relayInfo.port}/ws`,
         // @ts-ignore seems working
         WebSocket
       })
@@ -110,13 +109,40 @@ export const test = base.extend<{
       // listen and attach log
       const logs = []
       const errorLogs = []
+      const warnLogs = []
+      let initialLogReceived = false
+      let receivingFirstLog = true
       client.debug.onLog.subscribe(undefined, {
         onData: (log) => {
-          if (typeof log === 'object' && 'error' in log) {
+          if (receivingFirstLog) {
+            expect(Array.isArray(log)).toBe(true)
+          }
+          if (!initialLogReceived && Array.isArray(log)) {
+            log
+              .filter((log) => typeof log === 'object' && 'error' in log)
+              .forEach((log) => {
+                errorLogs.push(log)
+              })
+            log
+              .filter((log) => typeof log === 'object' && 'warn' in log)
+              .forEach((log) => {
+                warnLogs.push(log)
+              })
+            log.forEach((log) => {
+              logs.push(log)
+            })
+            logs.push('---end of logs before client.debug.onLog.subscribe---')
+            initialLogReceived = true
+          } else if (typeof log === 'object' && 'error' in log) {
+            logs.push(log)
             errorLogs.push(log)
+          } else if (typeof log === 'object' && 'warn' in log) {
+            logs.push(log)
+            warnLogs.push(log)
           } else {
             logs.push(log)
           }
+          receivingFirstLog = false
         }
       })
       // check actually works
@@ -126,7 +152,13 @@ export const test = base.extend<{
         body: JSON.stringify(logs, null, 2),
         contentType: 'application/json'
       })
-      expect(errorLogs).toEqual([])
+      if (warnLogs.length > 0) {
+        await testInfo.attach('debug-warn-log.json', {
+          body: JSON.stringify(warnLogs, null, 2),
+          contentType: 'application/json'
+        })
+      }
+      expect(errorLogs).toMatchObject([])
     },
     // to capture errors //fixme wakes up too early when auto: true?
     { auto: false }
@@ -168,6 +200,7 @@ export const test = base.extend<{
   },
   waitForManualAction: async ({ page: defaultPage }, use) => {
     await use(async <T>(promise: Promise<T>, page: Page = defaultPage): Promise<T> => {
+      // eslint-disable-next-line playwright/no-page-pause
       const pagePausePromise = page.pause()
       const promiseResult = await promise
       await page.evaluate('playwright.resume()')

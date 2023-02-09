@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill'
 import { db, IFocus, INode } from '../db'
 import { checkFullArray, ensureId, searchHistoryByUrl } from '../utils'
-import { log, logError } from '../log'
+import { log, logError, logWarn } from '../log'
 import { focusUpdateSubject, nodeUpdateSubject } from '../trpc/router'
 import { tabs } from '../handlers/rxjs'
 
@@ -9,14 +9,20 @@ export const openedTabs = new Set<number>()
 // key = tabId
 const newlyOpenedTabsAndOpener = new Map<number, number>()
 export const syncAllFocus = async (): Promise<void> => {
-  const activeFocus = await db.focus.toArray()
-  for (const f of activeFocus) {
+  const focuses = await db.focus.toArray()
+  const tabs = await browser.tabs.query({})
+  const unpairedFocuses = focuses.filter((f) => !tabs.find((t) => t.id === f.tabId))
+  const unpairedTabs = tabs.filter((t) => !focuses.find((f) => f.tabId === t.id))
+  for (const f of unpairedFocuses) {
     const { id, tabId } = f
-    const tab = await browser.tabs.get(tabId).catch(() => null)
-    if (tab == null) {
-      logError(`syncAllFocus: tab ${tabId} of focus ${id} not found, remove focus`)
-      await db.focus.delete(id!)
-    }
+    logError(`syncAllFocus: tab ${tabId} of focus ${id} not found, remove focus`)
+    await db.focus.delete(id!)
+  }
+  for (const t of unpairedTabs) {
+    const { id } = t
+    logWarn(`syncAllFocus: tab ${id} not found in focus, creating node and focus`)
+    const nodeId = await db.node.add({ url: t.url!, childrenIds: [] })
+    await db.focus.add({ tabId: id!, active: false, nodeId: nodeId })
   }
 }
 
@@ -98,7 +104,7 @@ export const handleUrlChanged = async (
       .equals(openerTabId ?? thisTabId)
       .first()
     if (!openerTabFocus) {
-      logError('expected focus for tab but got null, creating new tree')
+      if (openerTabId != null) logError('expected focus for tab but got null, creating new tree')
       shouldCreateNewTree = true
     }
     return {
@@ -219,6 +225,11 @@ export const startStrategy = async (): Promise<void> => {
   await syncAllFocus()
   tabs.activationStream.subscribe(([activeInfo]) => {
     ;(async (): Promise<void> => {
+      if (!openedTabs.has(activeInfo.tabId)) {
+        // tabs.onUpdate listener will handle this (create new focus)
+        log("tabs.onActivated ignored (not modifying focus because it doesn't exist)")
+        return
+      }
       // FIXME: supports only single window
       const allActiveFocus = await db.focus.filter((f) => f.active).toArray()
       const focusOfThisTab = await db.focus.where('tabId').equals(activeInfo.tabId).first()
@@ -278,7 +289,9 @@ export const startStrategy = async (): Promise<void> => {
         await db.focus.delete(focus.id)
       } else {
         // 存在しない場合は本来の設計としておかしい
-        logError('tab closed but focus not found...?')
+        logError(
+          `tab ${tabId} closed but focus not found...? (probably it's created before clay start)`
+        )
       }
     })().catch(logError)
   })

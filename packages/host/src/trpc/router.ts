@@ -7,6 +7,7 @@ import { Observable, Subject } from 'rxjs'
 import { db, INode } from '../db'
 import superjson from 'superjson'
 import { searchHistoryByUrl } from '../utils'
+import { debugLogDeferred$ } from '../log'
 
 const t = initTRPC.create({ isServer: false, allowOutsideOfServer: true, transformer: superjson })
 
@@ -14,7 +15,7 @@ export type AppRouter = typeof appRouter
 export const appRouter = t.router({
   debug: t.router({
     onLog: t.procedure.subscription(() => {
-      return convertObservable(debugLogSubject)
+      return convertObservable(debugLogDeferred$)
     })
   }),
   hello: t.procedure.input(z.string()).query((req) => {
@@ -127,7 +128,6 @@ export const appRouter = t.router({
   })
 })
 
-export const debugLogSubject = new Subject<unknown>()
 export const nodeUpdateSubject = new Subject<NodeUpdate>()
 export const focusUpdateSubject = new Subject<FocusUpdate>()
 

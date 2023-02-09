@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures'
 
 const stringifyBase = require('json-stable-stringify')
-const stringify = (obj: unknown): string => stringifyBase(obj, { space: 2 })
+const stringify = (obj: unknown): string => stringifyBase(obj, { space: 2 }) + '\n'
 
 test('focuses switch ok', async ({ page, client, doSurfing }) => {
   void page // fixme
@@ -49,7 +49,9 @@ test('focuses switch ok', async ({ page, client, doSurfing }) => {
 
   console.log({ focusTabIdMap })
   expect.soft(stringify(focuses)).toMatchSnapshot('2fs-focuses.json')
-  expect.soft(currentFocuses).toMatchObject(focuses)
+  expect
+    .soft(focuses.filter((f) => currentFocuses.some((ff) => f.id === ff.id)))
+    .toMatchObject(currentFocuses)
   expect.soft(stringify(focusUpdates)).toMatchSnapshot('2fs-focus-updates.json')
   expect.soft(stringify(nodes)).toMatchSnapshot('2fs-nodes.json')
 })

@@ -8,7 +8,7 @@ import type { IncomingMessage } from 'http'
 import { EventEmitter } from 'events'
 import browser from 'webextension-polyfill'
 import { notifyUser } from '../background/utils'
-import { log } from '../log'
+import { log, logError } from '../log'
 
 // 事前条件
 // - クライアントは常に1度しか来ない（relay側でブロックするため)
@@ -111,15 +111,15 @@ process.on("SIGTERM", () => {
 let disposeConnection: (() => void) | null = null
 let portPostMessage: ((message: string) => void) | null = null
 
-export const connectNativeRelay = (listenPort: number): Promise<unknown> => {
+export const connectNativeRelay = (): Promise<number> => {
   return new Promise((resolve) => {
-    const port = browser.runtime.connectNative('net.hu2ty.clay_relay')
-    const initialMessage = { port: listenPort }
-    port.postMessage(initialMessage)
+    const nativePort = browser.runtime.connectNative('net.hu2ty.clay_relay')
+    const initialMessage = {}
+    nativePort.postMessage(initialMessage)
 
-    port.onMessage.addListener(handleMessage)
+    nativePort.onMessage.addListener(handleMessage)
     portPostMessage = (message): void => {
-      port.postMessage(JSON.parse(message)) // object -> string -> object -> stringを何故かやっている
+      nativePort.postMessage(JSON.parse(message)) // object -> string -> object -> stringを何故かやっている
     }
 
     let relayValidated = false
@@ -129,9 +129,13 @@ export const connectNativeRelay = (listenPort: number): Promise<unknown> => {
       const relayMessage = message.relayMessage // eslint-disable-line @typescript-eslint/no-unsafe-assignment
       if (!relayValidated) {
         if (typeof relayMessage === 'string') {
-          if (relayMessage === 'This is clay-relay') {
+          const match = relayMessage.match(/^This is clay-relay at port (\d+)$/)
+          if (match) {
+            const port = Number(match[1])
             relayValidated = true
-            resolve()
+            resolve(port)
+          } else {
+            logError('Invalid relay message: ' + relayMessage)
           }
         }
         return
@@ -158,19 +162,19 @@ export const connectNativeRelay = (listenPort: number): Promise<unknown> => {
       cee?.emit('message', JSON.stringify(message)) // json -> string -> jsonとしてて最悪
     }
 
-    port.onDisconnect.addListener(handleDisconnect)
+    nativePort.onDisconnect.addListener(handleDisconnect)
 
     function handleDisconnect(): void {
       log('Disconnected from relay!')
-      log(port.error)
+      log(nativePort.error)
       void notifyUser('Disconnected from relay! ')
       isConnected = false
     }
 
     return () => {
-      port.disconnect()
-      port.onMessage.removeListener(handleMessage)
-      port.onDisconnect.removeListener(handleDisconnect)
+      nativePort.disconnect()
+      nativePort.onMessage.removeListener(handleMessage)
+      nativePort.onDisconnect.removeListener(handleDisconnect)
       portPostMessage = null
     }
   })
