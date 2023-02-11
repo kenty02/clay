@@ -4,10 +4,17 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./packages/host
@@ -68,6 +75,11 @@ jobs:
         with:
           hugo-version: '0.91.2'
           extended: true
+
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Run Playwright tests with xvfb & test sites
         run: |
