@@ -199,6 +199,9 @@ export const test = base.extend<{
     processes.forEach((proc) => proc.kill())
   },
   waitForManualAction: async ({ page: defaultPage }, use) => {
+    if (process.env.CI) {
+      throw new Error('tests using waitForManualAction must be skipped in CI')
+    }
     await use(async <T>(promise: Promise<T>, page: Page = defaultPage): Promise<T> => {
       // eslint-disable-next-line playwright/no-page-pause
       const pagePausePromise = page.pause()

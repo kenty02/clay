@@ -8,6 +8,9 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/host
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,17 +41,45 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: cd to package
-        run: cd packages/host
       - name: Install dependencies
         run: pnpm install
-      - name: Install Playwright Browsers
-        run: pnpm playwright install --with-deps
-      - name: Run Playwright tests
-        run: pnpm playwright test
+      - name: Install Playwright Browsers (Chromium only)
+        run: pnpm playwright install --with-deps chromium
+      - name: Download clay-relay
+        uses: robinraju/release-downloader@v1.7
+        with:
+          repository: "kenty02/clay-relay"
+          tag: "v0.1.2"
+          fileName: clay-relay_Linux_x86_64.tar.gz
+          token: ${{ secrets.TOKEN_CLAY_RELAY }}
+      - name: Extract clay-relay
+        run: mkdir clay-relay && tar -xzf clay-relay_Linux_x86_64.tar.gz -C clay-relay
+        working-directory: ./
+      - name: Register clay-relay
+        run: clay-relay/clay-relay --register
+        working-directory: ./
+
+      - name: Checkout test sites
+        run: |
+          mkdir -p test-sites
+          git clone --depth 1 https://github.com/letsencrypt/website.git test-sites/letsencrypt
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: '0.91.2'
+          extended: true
+
+      - name: Run Playwright tests with xvfb & test sites
+        run: |
+          cd test-sites/letsencrypt
+          hugo server &
+          pnpm dlx wait-port 1313
+          cd ../..
+          xvfb-run pnpm playwright test
+
       - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: playwright-report
-          path: playwright-report/
+          path: packages/host/playwright-report/
           retention-days: 30
