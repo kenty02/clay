@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
 import * as path from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import * as fs from 'fs'
+import { createIPCHandler } from 'electron-trpc/main'
+import { electronAppRouter } from './trpc/router'
 
 function createWindow(): void {
   // Create the browser window.
@@ -35,6 +37,8 @@ function createWindow(): void {
   ipcMain.handle('clearLogFile', () => {
     fs.writeFileSync(logFile, '', { encoding: 'utf-8' })
   })
+
+  createIPCHandler({ router: electronAppRouter, windows: [mainWindow] })
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
