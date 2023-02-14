@@ -1,17 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useEffect, useState } from 'react'
 import { trpc } from '../utils/trpc'
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client'
 import superjson from 'superjson'
 import { showNotification } from '@mantine/notifications'
 import { ipcLink } from 'electron-trpc/renderer'
 import { ElectronAppRouter } from '../../../main/trpc/router'
+import HostSelectorModal from '../components/HostSelectorModal'
+import { useDebugAction } from './SpotlightProvider'
 
 export const electronClient = createTRPCProxyClient<ElectronAppRouter>({
   links: [ipcLink()],
   transformer: superjson
 })
 
+let wsClient: ReturnType<typeof createWSClient> | null = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TRPCClient = any
 let trpcClient: TRPCClient | null
@@ -19,28 +22,68 @@ let trpcClient: TRPCClient | null
 const queryClient = new QueryClient({ defaultOptions: { queries: { suspense: true } } })
 
 function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
-  if (trpcClient == null) {
-    const createPromise = (async (): Promise<void> => {
-      const relayInfos = await electronClient.getRelayInfos.query()
-      if (relayInfos.length === 0)
-        throw new Error('no relay found, please install clay extension in your browser and start')
-      else if (relayInfos.length > 1)
-        throw new Error(`${relayInfos.length} relays found, only one host is supported now`)
+  const [selectedRelayPort, setSelectedRelayPort] = useState<number | null>(null)
+  const [relayInfos, setRelayInfos] = useState<Awaited<
+    ReturnType<(typeof electronClient)['getRelayInfos']['query']>
+  > | null>(null)
+  const [error, setError] = useState<Error | null>(null)
+  if (error) throw error
 
-      const port = relayInfos[0].port
+  useEffect(() => {
+    electronClient.getRelayInfos.query().then(setRelayInfos).catch(setError)
+  }, [])
+
+  const reset = (): void => {
+    if (wsClient != null) {
+      showNotification({ message: 'Connection to the host extension gone' })
+      const closingWsClient = wsClient
+      wsClient = null
+      closingWsClient.close()
+      trpcClient = null
+      setSelectedRelayPort(null)
+    }
+  }
+
+  useDebugAction('reset trpc', () => {
+    reset()
+  })
+
+  if (trpcClient == null) {
+    if (relayInfos == null) {
+      return <div>fetching relay info, please wait...</div>
+    }
+
+    if (selectedRelayPort == null) {
+      if (relayInfos.length !== 1) {
+        return (
+          <HostSelectorModal
+            relayInfos={relayInfos}
+            onSelected={(port): void => {
+              setSelectedRelayPort(port)
+            }}
+          />
+        )
+      } else {
+        setSelectedRelayPort(relayInfos[0].port)
+        return <div>connecting, please wait...</div>
+      }
+    }
+
+    const clientCreatePromise = (async (): Promise<void> => {
+      const port = relayInfos.length === 1 ? relayInfos[0].port : selectedRelayPort
+      if (port == null) return
 
       // strict modeで2回呼ばれるのを防ぐために一回のみ呼ぶ
-      const wsClient = createWSClient({
+      wsClient = createWSClient({
         url: `ws://localhost:${port}/ws`,
         onOpen: () => {
           if (import.meta.env.DEV) {
             showNotification({ message: 'ws opened' })
           }
         },
-        onClose: () => {
-          if (import.meta.env.DEV) {
-            showNotification({ message: 'ws closed' })
-          }
+        onClose: (cause) => {
+          console.log('ws closed', cause)
+          reset()
         }
       })
 
@@ -59,7 +102,7 @@ function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
         transformer: superjson
       })
     })()
-    throw createPromise
+    throw clientCreatePromise
   }
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
