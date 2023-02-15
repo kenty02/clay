@@ -19,6 +19,13 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      validate_all_codebases:
+        type: boolean
+        description: 'Should super-linter validate all codebases?'
+        required: false
+        default: false
 
 ###############
 # Set the Job #
@@ -55,7 +62,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
-          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: ${{ github.event.inputs.validate_all_codebases }}
           # Change to 'master' if your main branch differs
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
