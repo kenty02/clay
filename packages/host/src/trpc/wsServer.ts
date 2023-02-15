@@ -111,10 +111,13 @@ process.on("SIGTERM", () => {
 let disposeConnection: (() => void) | null = null
 let portPostMessage: ((message: string) => void) | null = null
 
-export const connectNativeRelay = (): Promise<number> => {
+export const connectNativeRelay = (isTesting = false): Promise<number> => {
   return new Promise((resolve) => {
     const nativePort = browser.runtime.connectNative('net.hu2ty.clay_relay')
-    const initialMessage = {}
+    const tags: string[] = []
+    if (import.meta.env.DEV) tags.push('dev')
+    if (isTesting) tags.push('test')
+    const initialMessage = { tags }
     nativePort.postMessage(initialMessage)
 
     nativePort.onMessage.addListener(handleMessage)

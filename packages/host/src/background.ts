@@ -8,9 +8,11 @@ registerCommandHandlers()
 
 void startStrategy()
 
-if (import.meta.env.DEV) {
+// viteが既に起動している(& --mode testが指定されなかった)状態でテストがされた場合は必ずfalseになる(CIではreuseExistingServerがfalseなので気にしなくていい)
+const isTesting = import.meta.env.DEV && import.meta.env.MODE === 'test'
+if (isTesting) {
   getTestOptions().then(({ sendResponse }) => {
-    connectNativeRelay().then((port) => {
+    connectNativeRelay(isTesting).then((port) => {
       sendResponse({ port })
     })
   })

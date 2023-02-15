@@ -101,7 +101,7 @@ const config: PlaywrightTestConfig = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm dev',
+    command: 'pnpm dev --mode test',
     url: 'http://localhost:3000/@vite/env',
     reuseExistingServer: !process.env.CI
   }
