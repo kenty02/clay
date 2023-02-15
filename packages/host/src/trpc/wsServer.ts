@@ -111,45 +111,51 @@ process.on("SIGTERM", () => {
 let disposeConnection: (() => void) | null = null
 let portPostMessage: ((message: string) => void) | null = null
 
+type Message = {
+  action: 'init' | 'relayMessage' | 'trpc'
+  payload: unknown
+}
+
 export const connectNativeRelay = (isTesting = false): Promise<number> => {
   return new Promise((resolve) => {
     const nativePort = browser.runtime.connectNative('net.hu2ty.clay_relay')
     const tags: string[] = []
     if (import.meta.env.DEV) tags.push('dev')
     if (isTesting) tags.push('test')
-    const initialMessage = { tags }
-    nativePort.postMessage(initialMessage)
+    const initialMessagePayload = { tags }
+    const firstMessage: Message = { action: 'init', payload: initialMessagePayload }
+    nativePort.postMessage(firstMessage)
 
     nativePort.onMessage.addListener(handleMessage)
     portPostMessage = (message): void => {
-      nativePort.postMessage(JSON.parse(message)) // object -> string -> object -> stringを何故かやっている
+      nativePort.postMessage({ action: 'trpc', payload: message })
     }
 
     let relayValidated = false
 
-    function handleMessage(message: unknown): void {
-      // @ts-expect-error aaaa
-      const relayMessage = message.relayMessage // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+    function handleMessage(message: Message): void {
+      const { action, payload } = message
+
       if (!relayValidated) {
-        if (typeof relayMessage === 'string') {
-          const match = relayMessage.match(/^This is clay-relay at port (\d+)$/)
+        if (action === 'relayMessage') {
+          const match = payload.match(/^This is clay-relay at port (\d+)$/)
           if (match) {
             const port = Number(match[1])
             relayValidated = true
             resolve(port)
           } else {
-            logError('Invalid relay message: ' + relayMessage)
+            logError('Invalid relay message: ' + payload)
           }
+        } else {
+          logError('Expected init message, got: ' + message)
         }
-        return
-      }
-      if (typeof relayMessage === 'string') {
-        if (relayMessage === 'open') {
+      } else if (action === 'relayMessage') {
+        if (payload === 'open') {
           log('Connected to viewer')
           void notifyUser('Viewer connected')
           isConnected = true
           disposeConnection = createConnection()
-        } else if (relayMessage === 'close') {
+        } else if (payload === 'close') {
           if (!isConnected) return
           log('Disconnected from viewer')
           void notifyUser('Viewer disconnected')
@@ -158,11 +164,14 @@ export const connectNativeRelay = (isTesting = false): Promise<number> => {
           disposeConnection?.()
           disposeConnection = null
         } else {
-          log(`Unknown relay message ${relayMessage}`)
+          log(`Unknown relay message ${payload}`)
         }
         return
+      } else if (action === 'trpc') {
+        cee?.emit('message', payload as string)
+      } else {
+        logError('Unknown message: ' + message)
       }
-      cee?.emit('message', JSON.stringify(message)) // json -> string -> jsonとしてて最悪
     }
 
     nativePort.onDisconnect.addListener(handleDisconnect)
