@@ -7,7 +7,7 @@ import { showNotification } from '@mantine/notifications'
 import { ipcLink } from 'electron-trpc/renderer'
 import { ElectronAppRouter } from '../../../main/trpc/router'
 import HostSelectorModal from '../components/HostSelectorModal'
-import { useDebugAction } from './SpotlightProvider'
+import { useAction } from './SpotlightProvider'
 
 export const electronClient = createTRPCProxyClient<ElectronAppRouter>({
   links: [ipcLink()],
@@ -44,7 +44,7 @@ function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
     }
   }
 
-  useDebugAction('reset trpc', () => {
+  useAction('reset trpc', () => {
     reset()
   })
 

@@ -6,6 +6,7 @@ import { Button } from '@mantine/core'
 import { NodeUpdate } from 'clay-host/src/trpc/types'
 import useNodes from '../hooks/use-nodes'
 import produce, { setAutoFreeze } from 'immer'
+import { useAction } from '../providers/SpotlightProvider'
 
 function NodeGraphView(): JSX.Element {
   const { client } = trpc.useContext()
@@ -90,6 +91,8 @@ function NodeGraphView(): JSX.Element {
     console.log({ message: 'resetGraphData', before: graphDataRef.current, after })
     setGraphData(after)
   }, [])
+  useAction('resetGraphData', resetGraphData)
+
   const [graphData, setGraphData] = useState(() => getInitialGraphData())
   const graphDataRef = useRef(graphData)
   graphDataRef.current = graphData
