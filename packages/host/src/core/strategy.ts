@@ -1,9 +1,10 @@
 import browser from 'webextension-polyfill'
 import { db, IFocus, INode } from '../db'
-import { checkFullArray, ensureId, searchHistoryByUrl } from '../utils'
+import { checkFullArray, ensureId } from '../utils'
 import { log, logError, logWarn } from '../log'
 import { focusUpdateSubject, nodeUpdateSubject } from '../trpc/router'
 import { tabs } from '../handlers/rxjs'
+import AsyncLock from 'async-lock'
 
 export const openedTabs = new Set<number>()
 // key = tabId
@@ -21,7 +22,7 @@ export const syncAllFocus = async (): Promise<void> => {
   for (const t of unpairedTabs) {
     const { id } = t
     logWarn(`syncAllFocus: tab ${id} not found in focus, creating node and focus`)
-    const nodeId = await db.node.add({ url: t.url!, childrenIds: [] })
+    const nodeId = await db.node.add({ url: t.url!, childrenIds: [], title: t.title! })
     await db.focus.add({ tabId: id!, active: false, nodeId: nodeId })
   }
 }
@@ -53,11 +54,9 @@ db.focus.hook('updating', function () {
 })
 
 export const notifyNodeUpdate = async (node: INode): Promise<void> => {
-  const title = (await searchHistoryByUrl(node.url))[0]?.title
   nodeUpdateSubject.next({
     id: node.id!,
-    ...node,
-    title: title ?? 'NO TITLE'
+    ...node
   })
 }
 export const notifyFocusUpdate = (focus: IFocus): void => {
@@ -69,7 +68,7 @@ export const notifyFocusUpdate = (focus: IFocus): void => {
 // 既存タブのURL変更、または新しいタブ作成時に呼び出し
 export const handleUrlChanged = async (
   // data: browser.WebNavigation.OnCommittedDetailsType
-  data: { url: string; tabId: number; openerTabId?: number; isFrontTab: boolean }
+  data: { url: string; tabId: number; openerTabId?: number; isFrontTab: boolean; title: string }
 ): Promise<void> => {
   // URLが遷移した
   log('handleUrlChanged, New/MoveTo ' + data.url)
@@ -121,7 +120,8 @@ export const handleUrlChanged = async (
     // create node at new tree
     const newNode: INode = {
       url: data.url,
-      childrenIds: []
+      childrenIds: [],
+      title: data.title
     }
     const nodeId = await db.node.add(newNode)
     newNode.id = nodeId
@@ -192,7 +192,7 @@ export const handleUrlChanged = async (
       log('create and move focus!')
 
       const newNode = await createNode(
-        { url: data.url, parentId: openerFocusNodeId, childrenIds: [] },
+        { url: data.url, parentId: openerFocusNodeId, childrenIds: [], title: data.title },
         openerFocusNode
       )
 
@@ -246,37 +246,58 @@ export const startStrategy = async (): Promise<void> => {
     })().catch(logError)
   })
 
+  const tabUpdateLock = new AsyncLock()
   let testCount = 0
   // タブに関するあらゆる更新情報が来る
   // Duplicate&Newの際にフォーカス及びノードを正しく関連付けられるようにするため
   // 特に、タブを複製した場合onCommittedは呼ばれずこっちのみが呼ばれる
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    ;(async (): Promise<void> => {
-      if (!tab.url) {
-        logError('tabs permission not granted?')
-        return
-      }
+    // 各tabのupdateが必ず順番に処理されるようにする
+    tabUpdateLock
+      .acquire(String(tabId), async () => {
+        if (!tab.url || !tab.title) {
+          logError('tabs permission not granted?')
+          return
+        }
 
-      if (changeInfo.url) {
-        // URL変更(つまり遷移)が発生
-        // 同じURLのリンク踏んでも発生しない!
-        log(`${testCount++}th transition, url changed (in current or new tab)`)
-        await handleUrlChanged({
-          url: tab.url,
-          tabId,
-          openerTabId: tab.openerTabId,
-          isFrontTab: tab.active
-        })
+        if (changeInfo.url) {
+          // URL変更(つまり遷移)が発生
+          // 同じURLのリンク踏んでも発生しない!
+          log(`${testCount++}th transition, url changed (in current or new tab)`)
+          await handleUrlChanged({
+            url: tab.url,
+            tabId,
+            openerTabId: tab.openerTabId,
+            isFrontTab: tab.active,
+            title: tab.title
+          })
 
-        //   const transitionInfo = await getTransitionInfo(tabId);
-        // if(transitionInfo) {
-        //   log("transitionInfo available")
-        // }
-      }
-      // if (openedTabs.has(tabId)) return;
-      // openedTabs.add(tabId);
-      // 新規タブが作成された
-    })().catch(logError)
+          //   const transitionInfo = await getTransitionInfo(tabId);
+          // if(transitionInfo) {
+          //   log("transitionInfo available")
+          // }
+        } else if (changeInfo.title) {
+          // urlは変更しなかったが、タイトルが変更された
+          log(
+            `title changed with url unchanged: "${changeInfo.title}" at tabId ${tabId} url: ${tab.url}`
+          )
+          const focus = await db.focus.where('tabId').equals(tabId).first()
+          if (!focus) {
+            logError(`attempted to change title of node, but no focus at tabId ${tabId}`)
+            return
+          }
+          const node = await db.node.get(focus.nodeId)
+          if (!node) {
+            logError(`attempted to change title of node, but no node  ${focus.nodeId}`)
+            return
+          }
+          await db.node.update(node, { title: changeInfo.title })
+        }
+        // if (openedTabs.has(tabId)) return;
+        // openedTabs.add(tabId);
+        // 新規タブが作成された
+      })
+      .catch(logError)
   })
 
   browser.tabs.onRemoved.addListener((tabId) => {

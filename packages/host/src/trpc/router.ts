@@ -6,7 +6,6 @@ import { FocusUpdate, NodeUpdate } from './types'
 import { Observable, Subject } from 'rxjs'
 import { db, INode } from '../db'
 import superjson from 'superjson'
-import { searchHistoryByUrl } from '../utils'
 import { debugLogDeferred$ } from '../log'
 
 const t = initTRPC.create({ isServer: false, allowOutsideOfServer: true, transformer: superjson })
@@ -25,35 +24,18 @@ export const appRouter = t.router({
     onUpdate: t.procedure.subscription(() => {
       return convertObservable(nodeUpdateSubject)
     }),
+    bulkGet: t.procedure
+      .input(z.object({ nodeIds: z.array(z.number()) }))
+      .query(async ({ input }) => {
+        return db.node.where('id').anyOf(input.nodeIds).toArray()
+      }),
     get: t.procedure.input(z.object({ nodeId: z.number() })).query(async ({ input }) => {
       const { nodeId } = input
-      const nodes = await db.node.filter((node) => node.id === nodeId).toArray()
-      const nodeTitles: Record<number, string> = {}
-      await Promise.all(
-        nodes.map(async (node) => {
-          const historyItem = await searchHistoryByUrl(node.url)
-          const hasTitleItems = historyItem.filter((n) => n.url === node.url)
-          let title: string
-          // とりあえず最初の要素
-          if (hasTitleItems.length === 0 || hasTitleItems[0].title == null) {
-            title = node.url
-          } else {
-            title = hasTitleItems[0].title
-          }
-          nodeTitles[node.id!] = title
-        })
-      )
-      if (nodes.length === 0) {
+      const node = await db.node.where('id').equals(nodeId).first()
+      if (node == null) {
         throw new Error('node not found')
       }
-      return { ...nodes[0], title: nodeTitles[nodes[0].id!] }
-      // actually we only need one
-      /*
-      return nodes.map((node) => ({
-        ...node,
-        title: nodeTitles[node.id!]
-      })) satisfies (INodeWithoutPosition & { title: string })[]
-*/
+      return node
     }),
     getAllFocusedAndItsRelatives: t.procedure.query(async () => {
       // assuming all focus.active is true

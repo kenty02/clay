@@ -1,102 +1,103 @@
 import { trpc } from '../utils/trpc'
-import { useMemo, useRef, useState } from 'react'
-import { useListState, useViewportSize } from '@mantine/hooks'
+import { useCallback, useRef, useState } from 'react'
+import { useViewportSize } from '@mantine/hooks'
 import { ForceGraph2D } from 'react-force-graph'
+import { Button } from '@mantine/core'
+import { NodeUpdate } from 'clay-host/src/trpc/types'
+import useNodes from '../hooks/use-nodes'
+import produce, { setAutoFreeze } from 'immer'
 
 function NodeGraphView(): JSX.Element {
-  const {
-    node: {
-      get: { invalidate, setData: setNodeData }
-    },
-    client
-  } = trpc.useContext()
-  const { mutate: selectFocus } = trpc.focus.select.useMutation()
+  const { client } = trpc.useContext()
 
-  // idだけ使う
-  const { data: initialNodeIds } = trpc.node.getAllFocusedAndItsRelatives.useQuery(undefined, {
-    // 一回しか取得する必要ないため
-    staleTime: Infinity
-  })
-  const [nodeIds, updateNodeIds] = useListState<number>(initialNodeIds)
-
-  const nodesQueryResults = trpc.useQueries((t) =>
-    nodeIds.map((id) =>
-      t.node.get(
-        { nodeId: id! },
-        {
-          // subscribeするため
-          staleTime: Infinity,
-          keepPreviousData: true
-          // suspense: false /*important*/
+  const zoomTimeout = useRef<number | null>(null)
+  const onNodeUpdate = useCallback((data: NodeUpdate) => {
+    const { id, parentId } = data
+    setGraphData((old) => {
+      // let hoge = null
+      const nodeIndex = old.nodes.findIndex((n) => n.id === id)
+      const isNewNode = nodeIndex === -1
+      const newGraphData = produce(old, (draft) => {
+        setAutoFreeze(false)
+        if (isNewNode && parentId != null) {
+          draft.links.push({ source: parentId, target: id })
         }
-      )
-    )
-  )
-  // providerとかにおくべき
-  trpc.node.onUpdate.useSubscription(undefined, {
-    onData: (data) => {
-      const { id } = data
-      void invalidate({ nodeId: id })
-      setNodeData({ nodeId: id }, (old) => {
-        if (old === undefined) return data as Required<typeof data> // todo ?
-        return { ...old, ...data }
-      })
-      setGraphData((old) => {
-        return {
-          ...old,
-          nodes:
-            old.nodes.findIndex((n) => n.id === id) === -1
-              ? [...old.nodes, { ...data, urlHostname: new URL(data.url ?? 'aa').hostname }]
-              : old.nodes.map((n) => (n.id === id ? (data as Required<typeof data>) : n))
+        if (isNewNode) {
+          draft.nodes.push({
+            ...(data as Required<typeof data>),
+            urlHostname: new URL(data.url ?? 'aa').hostname
+          })
         }
       })
 
-      // too early?
-      if (!nodeIds.includes(id)) {
-        updateNodeIds.append(id)
-        // zoom to new node after some ms
-        setTimeout(() => {
-          const nodes = graphDataRef.current.nodes.filter((n) => n.id === id)
-          const node = nodes.length > 0 ? nodes[0] : null
-          if (node == null) return
-
-          // @ts-ignore ForceGraphが渡したオブジェクトに代入する
-          fgRef.current!.centerAt(node.x as number, node.y as number)
-        }, 500)
+      // なぜかimmerを使ってgraphに既にあるnodeを更新すると表示がバグるので、この場合だけは使わずに更新する
+      if (!isNewNode) {
+        Object.assign(newGraphData.nodes[nodeIndex], {
+          ...(data as Required<typeof data>),
+          urlHostname: new URL(data.url ?? 'aa').hostname
+        })
       }
-    },
-    onError: (error) => {
-      throw error
-    }
+      console.log({ old, data, new: newGraphData })
+      return newGraphData
+    })
+
+    // too early?
+    // zoom to the updated node after some ms
+    if (zoomTimeout.current != null) clearTimeout(zoomTimeout.current)
+    zoomTimeout.current = window.setTimeout(() => {
+      const nodes = graphDataRef.current.nodes.filter((n) => n.id === id)
+      const node = nodes.length > 0 ? nodes[0] : null
+      if (node == null) return
+
+      // @ts-ignore ForceGraphが渡したオブジェクトに代入する
+      fgRef.current!.centerAt(node.x as number, node.y as number)
+    }, 500)
+  }, [])
+
+  const { nodesRef } = useNodes({
+    onNodeUpdate
   })
+  const { mutate: selectFocus } = trpc.focus.select.useMutation()
 
   const fgRef = useRef<NonNullable<React.ComponentProps<typeof ForceGraph2D>['ref']>['current']>()
 
-  const initialGraphData = useMemo(() => {
+  const getInitialGraphData = useCallback(() => {
     // if there is a loading query, return empty for now todo
     // if (nodesQueryResults.some((r) => r.isLoading)) return { nodes: [], links: [] }
-    const nodes = nodesQueryResults
-      .filter((r) => r.data != null)
-      .map((r) => ({
-        ...r.data!,
-        urlHostname: new URL(r.data?.url ?? 'http://example.com').hostname
-      }))
+    const nodes = nodesRef.current.map((n) => {
+      let urlHostname = ''
+      if (n.url.length > 0)
+        try {
+          urlHostname = new URL(n.url).hostname
+        } catch (e) {
+          console.error(e)
+        }
+      return {
+        ...n,
+        urlHostname
+      }
+    })
     const links = nodes
-      .filter((n) => n.parentId != null && nodeIds.includes(n.parentId))
+      .filter((n) => n.parentId != null && nodesRef.current.some((n2) => n2.id === n.parentId))
       .map((n) => {
         return { source: n.parentId, target: n.id }
       })
 
     return { nodes, links }
-  }, [initialNodeIds])
-
-  const [graphData, setGraphData] = useState(initialGraphData)
+  }, [])
+  const resetGraphData = useCallback(() => {
+    const after = getInitialGraphData()
+    console.log({ message: 'resetGraphData', before: graphDataRef.current, after })
+    setGraphData(after)
+  }, [])
+  const [graphData, setGraphData] = useState(() => getInitialGraphData())
   const graphDataRef = useRef(graphData)
   graphDataRef.current = graphData
 
   const { height, width } = useViewportSize()
   return (
     <div>
+      <Button onClick={resetGraphData}>reset</Button>
       <ForceGraph2D
         width={width}
         height={height * 0.8}

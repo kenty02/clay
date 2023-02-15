@@ -6,6 +6,7 @@ export interface INode {
   url: string
   parentId?: number
   childrenIds: number[]
+  title: string
 }
 
 // should be ephemeral or permanent ( or both ) ?

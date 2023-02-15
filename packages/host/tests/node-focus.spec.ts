@@ -1,7 +1,5 @@
 import { expect, test } from './fixtures'
-
-const stringifyBase = require('json-stable-stringify')
-const stringify = (obj: unknown): string => stringifyBase(obj, { space: 2 }) + '\n'
+import { stringify } from './utils'
 
 test('focuses switch ok', async ({ page, client, doSurfing }) => {
   void page // fixme
@@ -28,11 +26,24 @@ test('focuses switch ok', async ({ page, client, doSurfing }) => {
       }
     }
   })
+  const nodeUpdates = []
+  const currentNodes = []
+  client.node.onUpdate.subscribe(undefined, {
+    onData: (data) => {
+      nodeUpdates.push({ ...data })
+
+      const index = currentNodes.findIndex((u) => u.id === data.id)
+      if (index === -1) currentNodes.push({ ...data })
+      else {
+        currentNodes[index] = { ...currentNodes[index], ...data }
+      }
+    }
+  })
 
   await doSurfing("Let's Encrypt 2 focuses")
 
   const allIds = await client.node.getAllFocusedAndItsRelatives.query()
-  const nodes = await Promise.all(allIds.map((id) => client.node.get.query({ nodeId: id })))
+  const nodes = await client.node.bulkGet.query({ nodeIds: allIds })
   // sort by id
   nodes.sort((a, b) => a.id - b.id)
   currentFocuses.sort((a, b) => a.id - b.id)
@@ -54,4 +65,8 @@ test('focuses switch ok', async ({ page, client, doSurfing }) => {
     .toMatchObject(currentFocuses)
   expect.soft(stringify(focusUpdates)).toMatchSnapshot('2fs-focus-updates.json')
   expect.soft(stringify(nodes)).toMatchSnapshot('2fs-nodes.json')
+
+  expect
+    .soft(nodes.filter((f) => currentNodes.some((ff) => f.id === ff.id)))
+    .toMatchObject(currentNodes.sort((a, b) => a.id - b.id))
 })
