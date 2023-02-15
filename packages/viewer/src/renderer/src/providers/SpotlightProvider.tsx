@@ -70,7 +70,7 @@ export const useAction = (action: string, listener: () => void): void => {
 
     return () => {
       const count = actionObserverCount.get(action) ?? 0
-      if (count === 0) {
+      if (count !== 0) {
         actionObserverCount.set(action, count - 1)
       } else {
         console.error(`Action observer count for ${action} is already 0`)
