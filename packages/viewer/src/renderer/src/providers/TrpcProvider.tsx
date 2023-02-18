@@ -72,10 +72,11 @@ function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
     const clientCreatePromise = (async (): Promise<void> => {
       const port = relayInfos.length === 1 ? relayInfos[0].port : selectedRelayPort
       if (port == null) return
+      const token = relayInfos.find((info) => info.port === port)?.token
 
       // strict modeで2回呼ばれるのを防ぐために一回のみ呼ぶ
       wsClient = createWSClient({
-        url: `ws://localhost:${port}/ws`,
+        url: `ws://localhost:${port}/ws?token=${token}`,
         onOpen: () => {
           if (import.meta.env.DEV) {
             showNotification({ message: 'ws opened' })

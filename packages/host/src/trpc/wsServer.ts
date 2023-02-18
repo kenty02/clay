@@ -116,7 +116,7 @@ type Message = {
   payload: unknown
 }
 
-export const connectNativeRelay = (isTesting = false): Promise<number> => {
+export const connectNativeRelay = (isTesting = false): Promise<{ port: number; token: string }> => {
   return new Promise((resolve) => {
     const nativePort = browser.runtime.connectNative('net.hu2ty.clay_relay')
     const tags: string[] = []
@@ -138,11 +138,12 @@ export const connectNativeRelay = (isTesting = false): Promise<number> => {
 
       if (!relayValidated) {
         if (action === 'relayMessage') {
-          const match = payload.match(/^This is clay-relay at port (\d+)$/)
+          const match = payload.match(/^This is clay-relay at port (\d+), token (.+).$/)
           if (match) {
             const port = Number(match[1])
+            const token = match[2]
             relayValidated = true
-            resolve(port)
+            resolve({ port, token })
           } else {
             logError('Invalid relay message: ' + payload)
           }

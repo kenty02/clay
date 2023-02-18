@@ -12,8 +12,8 @@ void startStrategy()
 const isTesting = import.meta.env.DEV && import.meta.env.MODE === 'test'
 if (isTesting) {
   getTestOptions().then(({ sendResponse }) => {
-    connectNativeRelay(isTesting).then((port) => {
-      sendResponse({ port })
+    connectNativeRelay(isTesting).then(({ port, token }) => {
+      sendResponse({ port, token })
     })
   })
 } else {

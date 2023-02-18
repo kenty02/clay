@@ -66,5 +66,6 @@ export const electronAppRouter = t.router({
 const relayInfoSchema = z.object({
   port: z.number(),
   process_id: z.number(),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  token: z.string()
 })

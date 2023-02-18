@@ -13,7 +13,7 @@ import { TestOptions } from '../src/debug'
 const isVite = true
 export const test = base.extend<{
   _disableSnapshotPlatformSuffix: void
-  relayInfo: { port?: number }
+  relayInfo: { port?: number; token?: string }
   context: BrowserContext
   extensionId: string
   client: ReturnType<typeof createTRPCProxyClient<AppRouter>>
@@ -31,7 +31,7 @@ export const test = base.extend<{
   ],
   // eslint-disable-next-line no-empty-pattern
   relayInfo: async ({}, use) => {
-    await use({ port: undefined })
+    await use({ port: undefined, token: undefined })
   },
   context: async ({ browserName, relayInfo }, use) => {
     if (browserName !== 'chromium') {
@@ -62,8 +62,9 @@ export const test = base.extend<{
         )},undefined, resolve)})`
       )
       console.log(testOptionsResponse)
-      const { port } = testOptionsResponse as { port: number }
+      const { port, token } = testOptionsResponse as { port: number; token: string }
       relayInfo.port = port
+      relayInfo.token = token
     }
 
     await use(context)
@@ -94,7 +95,7 @@ export const test = base.extend<{
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async ({ context, relayInfo }, use, testInfo): Promise<void> => {
       const wsClient = createWSClient({
-        url: `ws://localhost:${relayInfo.port}/ws`,
+        url: `ws://localhost:${relayInfo.port}/ws?token=${relayInfo.token}`,
         // @ts-ignore seems working
         WebSocket
       })
