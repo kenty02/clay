@@ -22,6 +22,7 @@
     "react-dom": "^18.2.0",
     "rxjs": "^7.8.0",
     "superjson": "^1.12.2",
+    "trpc-chrome": "^1.0.0",
     "webextension-polyfill": "^0.10.0",
     "zod": "^3.20.2"
   },

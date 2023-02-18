@@ -2,6 +2,7 @@ import { registerCommandHandlers } from './background/commands'
 import { connectNativeRelay } from './trpc/wsServer'
 import { enableDebug, getTestOptions } from './debug'
 import { startStrategy } from './core/strategy'
+import './trpc-chrome'
 
 if (import.meta.env.DEV) enableDebug()
 registerCommandHandlers()

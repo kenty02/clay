@@ -59,6 +59,7 @@ importers:
       react-dom: ^18.2.0
       rxjs: ^7.8.0
       superjson: ^1.12.2
+      trpc-chrome: ^1.0.0
       typescript: ^4.9.4
       vite: ^2.9.15
       webextension-polyfill: ^0.10.0
@@ -75,6 +76,7 @@ importers:
       react-dom: 18.2.0_react@18.2.0
       rxjs: 7.8.0
       superjson: 1.12.2
+      trpc-chrome: 1.0.0_2zpqbmooshoeqfe2ml35ze43ai
       webextension-polyfill: 0.10.0
       zod: 3.20.2
     devDependencies:
@@ -5894,6 +5896,16 @@ packages:
     dependencies:
       is-number: 7.0.0
     dev: true
+
+  /trpc-chrome/1.0.0_2zpqbmooshoeqfe2ml35ze43ai:
+    resolution: { integrity: sha512-lulJIFLh37dz1m8zDCliCKhKJmrZqCTZd+kVyfL084aKkqaZVbfjzm7WqWOmhXiKvP/4pWeKSh7qIN2DhwTDUA== }
+    peerDependencies:
+      '@trpc/client': ^10.0.0
+      '@trpc/server': ^10.0.0
+    dependencies:
+      '@trpc/client': 10.9.0_@trpc+server@10.9.0
+      '@trpc/server': 10.9.0
+    dev: false
 
   /truncate-utf8-bytes/1.0.2:
     resolution: { integrity: sha512-95Pu1QXQvruGEhv62XCMO3Mm90GscOCClvrIUwCM0PYOXK3kaF3l3sIHxx71ThJfcbM2O5Au6SO3AWCSEfW4mQ== }

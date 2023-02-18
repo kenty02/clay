@@ -14,7 +14,8 @@
     "webNavigation",
     "nativeMessaging",
     "tabGroups",
-    "notifications"
+    "notifications",
+    "<all_urls>"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -26,6 +27,16 @@
     "service_worker": "src/background.ts",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "js": [
+        "src/content.ts"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "commands": {
     "open-view": {
       "suggested_key": {

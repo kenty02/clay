@@ -3,6 +3,22 @@
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
+        <entry key="Chrome Extension">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="Chrome Extension" />
+              <option name="relativePathToSchema" value="https://json.schemastore.org/chrome-manifest.json" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="packages/host/manifest.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
         <entry key="GitHub Workflow">
           <value>
             <SchemaInfo>
