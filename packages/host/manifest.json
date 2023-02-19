@@ -14,8 +14,7 @@
     "webNavigation",
     "nativeMessaging",
     "tabGroups",
-    "notifications",
-    "<all_urls>"
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"
