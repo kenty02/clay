@@ -1,4 +1,4 @@
-import { Button, MantineProvider, Text } from '@mantine/core'
+import { MantineProvider, Text } from '@mantine/core'
 import TrpcProvider from './providers/TrpcProvider'
 import { Suspense } from 'react'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -14,13 +14,6 @@ function App(): JSX.Element {
         <SpotlightProvider>
           <Suspense fallback={<Text>Loading...</Text>}>
             <TrpcProvider>
-              <Button
-                onClick={(): void => {
-                  location.reload()
-                }}
-              >
-                Reload
-              </Button>
               <ErrorBoundary
                 FallbackComponent={ErrorFallback}
                 onReset={(): void => {

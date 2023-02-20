@@ -2,13 +2,17 @@ import { trpc } from '../utils/trpc'
 import { useCallback, useRef, useState } from 'react'
 import { useViewportSize } from '@mantine/hooks'
 import { ForceGraph2D } from 'react-force-graph'
-import { Button } from '@mantine/core'
 import { NodeUpdate } from 'clay-host/src/trpc/types'
 import useNodes from '../hooks/use-nodes'
 import produce, { setAutoFreeze } from 'immer'
 import { useAction } from '../providers/SpotlightProvider'
 
-function NodeGraphView(): JSX.Element {
+type Props = {
+  width?: number
+  height?: number
+}
+
+function NodeGraphView({ width, height }: Props): JSX.Element {
   const { client } = trpc.useContext()
 
   const zoomTimeout = useRef<number | null>(null)
@@ -97,20 +101,26 @@ function NodeGraphView(): JSX.Element {
   const graphDataRef = useRef(graphData)
   graphDataRef.current = graphData
 
-  const { height, width } = useViewportSize()
+  const { height: vpHeight, width: vpWidth } = useViewportSize()
   return (
     <div>
-      <Button onClick={resetGraphData}>reset</Button>
       <ForceGraph2D
-        width={width}
-        height={height * 0.8}
+        width={width ?? vpWidth}
+        height={height ?? vpHeight}
         ref={fgRef}
         // graphData={{nodes: [{id:1,title:"hoge"}], links: []}}
         graphData={graphData}
         dagMode={'td'}
         dagLevelDistance={30}
-        backgroundColor="#101020"
-        linkColor={(): string => 'rgba(255,255,255,0.2)'}
+        backgroundColor="#F2F2F2"
+        nodeCanvasObjectMode={(): 'after' => 'after'}
+        nodeCanvasObject={(node, ctx, globalScale): void => {
+          ctx.fillStyle = 'rgba(0,0,0,0.7)'
+          ctx.font = `${12 / globalScale}px Sans-Serif`
+          // @ts-ignore fix later
+          ctx.fillText(node.title, (node.x as number) + 10, node.y as number)
+        }}
+        // linkColor={(): string => 'rgba(255,255,255,0.2)'}
         // nodeRelSize={1}
         // nodeId="id"
         // nodeVal={node => 100 / (node.level + 1)}
