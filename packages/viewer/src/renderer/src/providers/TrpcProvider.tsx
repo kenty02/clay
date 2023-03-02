@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { trpc } from '../utils/trpc'
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client'
@@ -6,8 +6,9 @@ import superjson from 'superjson'
 import { showNotification } from '@mantine/notifications'
 import { ipcLink } from 'electron-trpc/renderer'
 import { ElectronAppRouter } from '../../../main/trpc/router'
-import HostSelectorModal from '../components/HostSelectorModal'
+import { HostSelectorModal } from '../components/HostSelectorModal/HostSelectorModal'
 import { useAction } from './SpotlightProvider'
+import { queryClient } from './queryClient'
 
 export const electronClient = createTRPCProxyClient<ElectronAppRouter>({
   links: [ipcLink()],
@@ -18,8 +19,6 @@ let wsClient: ReturnType<typeof createWSClient> | null = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TRPCClient = any
 let trpcClient: TRPCClient | null
-
-const queryClient = new QueryClient({ defaultOptions: { queries: { suspense: true } } })
 
 function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
   const [selectedRelayPort, setSelectedRelayPort] = useState<number | null>(null)

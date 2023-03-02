@@ -1,18 +1,18 @@
-import { trpc } from '../utils/trpc'
+import { trpc } from '../../../../utils/trpc'
 import { useCallback, useRef, useState } from 'react'
 import { useViewportSize } from '@mantine/hooks'
 import { ForceGraph2D } from 'react-force-graph'
 import { NodeUpdate } from 'clay-host/src/trpc/types'
-import useNodes from '../hooks/use-nodes'
+import useNodes from '../../../../hooks/use-nodes'
 import produce, { setAutoFreeze } from 'immer'
-import { useAction } from '../providers/SpotlightProvider'
+import { useAction } from '../../../../providers/SpotlightProvider'
 
 type Props = {
   width?: number
   height?: number
 }
 
-function NodeGraphView({ width, height }: Props): JSX.Element {
+export const NodeGraphView = ({ width, height }: Props): JSX.Element => {
   const { client } = trpc.useContext()
 
   const zoomTimeout = useRef<number | null>(null)
@@ -138,5 +138,3 @@ function NodeGraphView({ width, height }: Props): JSX.Element {
     </div>
   )
 }
-
-export default NodeGraphView

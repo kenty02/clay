@@ -4,8 +4,8 @@ import { Suspense } from 'react'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { NotificationsProvider } from '@mantine/notifications'
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary'
-import NodeGraphView from './components/NodeGraphView'
 import SpotlightProvider from './providers/SpotlightProvider'
+import { SelectableNodeView } from './components/SelectableNodeView'
 
 function App(): JSX.Element {
   return (
@@ -21,7 +21,7 @@ function App(): JSX.Element {
                 }}
               >
                 <Suspense fallback={<Text>Loading...</Text>}>
-                  <NodeGraphView />
+                  <SelectableNodeView />
                 </Suspense>
               </ErrorBoundary>
               <ReactQueryDevtools panelPosition={'top'} />
