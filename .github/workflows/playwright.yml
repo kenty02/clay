@@ -19,7 +19,7 @@ jobs:
       run:
         working-directory: ./packages/host
     container:
-      image: mcr.microsoft.com/playwright:v1.30.0-focal
+      image: mcr.microsoft.com/playwright:v1.31.1-focal
     steps:
       - name: Checkout
         uses: actions/checkout@v3
