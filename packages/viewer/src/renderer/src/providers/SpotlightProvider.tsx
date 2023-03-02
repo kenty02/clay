@@ -1,7 +1,7 @@
 import { SpotlightAction, SpotlightProvider as MantineSpotlightProvider } from '@mantine/spotlight'
 import { PropsWithChildren, useEffect } from 'react'
 import { filter, Subject } from 'rxjs'
-import { showNotification } from '@mantine/notifications'
+import { notifications } from '@mantine/notifications'
 
 const actions: SpotlightAction[] = [
   {
@@ -31,7 +31,7 @@ const debugActions: SpotlightAction[] = [
   {
     title: 'Reset trpc',
     onTrigger: (): void => {
-      showNotification({
+      notifications.show({
         message: 'Reset trpc'
       })
       performAction('reset trpc')
@@ -49,7 +49,7 @@ export const actionSubject = new Subject<string>()
 export const performAction = (action: string): void => {
   const count = actionObserverCount.get(action) ?? 0
   if (count === 0) {
-    showNotification({
+    notifications.show({
       message: `Sorry, could not perform action "${action}". Please report this bug.`
     })
     return

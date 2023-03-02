@@ -3,7 +3,7 @@ import { PropsWithChildren, useEffect, useState } from 'react'
 import { trpc } from '../utils/trpc'
 import { createTRPCProxyClient, createWSClient, wsLink } from '@trpc/client'
 import superjson from 'superjson'
-import { showNotification } from '@mantine/notifications'
+import { notifications } from '@mantine/notifications'
 import { ipcLink } from 'electron-trpc/renderer'
 import { ElectronAppRouter } from '../../../main/trpc/router'
 import { HostSelectorModal } from '../components/HostSelectorModal/HostSelectorModal'
@@ -34,7 +34,7 @@ function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
 
   const reset = (): void => {
     if (wsClient != null) {
-      showNotification({ message: 'Connection to the host extension gone' })
+      notifications.show({ message: 'Connection to the host extension gone' })
       const closingWsClient = wsClient
       wsClient = null
       closingWsClient.close()
@@ -78,7 +78,7 @@ function TrpcProvider({ children }: PropsWithChildren): JSX.Element {
         url: `ws://localhost:${port}/ws?token=${token}`,
         onOpen: () => {
           if (import.meta.env.DEV) {
-            showNotification({ message: 'ws opened' })
+            notifications.show({ message: 'ws opened' })
           }
         },
         onClose: (cause) => {
