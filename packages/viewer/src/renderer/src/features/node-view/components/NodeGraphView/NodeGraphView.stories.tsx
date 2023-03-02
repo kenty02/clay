@@ -2,6 +2,7 @@ import { ComponentMeta, ComponentStoryObj } from '@storybook/react'
 import { NodeGraphView } from './NodeGraphView'
 import { getTrpcMockDecorator } from '../../../../test/TrpcMockProvider'
 import { faker } from '@faker-js/faker'
+import { NEVER } from 'rxjs'
 // ______________________________________________________
 //
 
@@ -45,6 +46,7 @@ export const Primary: ComponentStoryObj<typeof NodeGraphView> = {
           return node
         })
       })
+      mock.node.onUpdate.subscription(() => NEVER)
     })
   ]
 }

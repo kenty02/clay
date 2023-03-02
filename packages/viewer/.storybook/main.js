@@ -27,5 +27,8 @@ module.exports = {
       // manually specify plugins to avoid conflict
       plugins: []
     })
+  },
+  features: {
+    interactionsDebugger: true
   }
 }
