@@ -14,7 +14,7 @@ WebStormでリポジトリをクローン
 pnpm i
 ```
 
-clay-relayをインストール
+[clay-relay](https://github.com/kenty02/clay-relay)をインストール
 
 `All` configurationで両方のデバッグ開始
 
