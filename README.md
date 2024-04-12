@@ -2,7 +2,10 @@
 
 ブラウザの閲覧履歴を木構造で表すビューアを提供することにより、「前見ていたページに戻る」を簡単に実現します（現行バージョンは不具合の多さ等により常用に耐えるものではありません😭）
 
+新しいUI
+![image](https://github.com/kenty02/clay/assets/42216299/66a42e19-e03b-4ffd-9096-04a0a14ee321)
 
+旧UI
 https://github.com/kenty02/clay/assets/42216299/cdb0e9ab-dd6e-4044-ac7e-8705abbc1b98
 
 
